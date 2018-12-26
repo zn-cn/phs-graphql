@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+  api:
+    image: <space>/go-tofar-default:1.0.0
+    environment:
+      - TZ=Asia/Shanghai
+      - ENV=dev
+      - CONFIG_PATH_PREFIX=/app/src/config/
+
+      - WeixinAppID=<weixin appid>
+      - WeixinAppSecret=<weixin app secret>
+
+      - QINIU_ACCESS_KEY=<qiniu access key>
+      - QINIU_SECRET_KEY=<qiniu secret key>
+      - QINIU_BUCKET=phs-mp
+
+      - MONGO_INITDB_ROOT_USERNAME=<username>
+      - MONGO_INITDB_ROOT_PASSWORD=<password>
+      - MONGO_INITDB_DATABASE=phs
+
+      - RedisPass=<password>
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./src:/app/src
+      - ./log:/app/log
+    ports:
+      - "6551:3000"
+    depends_on:
+      - redis
+      - mongo
+    container_name: phs-mp-dev-api
+    entrypoint: go run src/main.go
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://<ip>:12201'
+        tag: phs-mp-dev
+  mongo:
+    image: mongo:3.6.3
+    expose:
+      - "27017"
+    ports:
+      - "49260:27017"
+    volumes:
+      - ./data/mongo:/data/db
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - MONGO_INITDB_ROOT_USERNAME=<username>
+      - MONGO_INITDB_ROOT_PASSWORD=<password>
+      - MONGO_INITDB_DATABASE=phs
+    container_name: phs-mp-dev-mongo
+  redis:
+    image: redis:4.0.8
+    ports:
+      - "49261:6379"
+    environment:
+      - TZ=Asia/Shanghai
+      - RedisPass=<password>
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/redis:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    container_name: phs-mp-dev-redis

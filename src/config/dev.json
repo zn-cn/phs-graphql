@@ -1,0 +1,20 @@
+{
+  "AppInfo": {
+    "Env": "dev"
+  },
+  "DB": {
+    "Host": "mongo",
+    "User": "<username>",
+    "PW": "<password>",
+    "AdminDBName": "admin"
+  },
+  "Redis": {
+    "Host": "redis",
+    "PW": "<password>"
+  },
+  "Qiniu": {
+    "AccessKey": "<qiniu access key>",
+    "SecretKey": "<qiniu secret key>",
+    "Bucket": "phs-mp"
+  }
+}

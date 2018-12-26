@@ -1,0 +1,42 @@
+{
+  "AppInfo": {
+    "Env": "local",
+    "Slogan": "小灵通",
+    "Addr": ":3000"
+  },
+  "Log": {
+    "LogBasePath": "/app/log/",
+    "LogFileName": "phs-mp"
+  },
+  "DB": {
+    "DriverName": "mongodb",
+    "Host": "127.0.0.1",
+    "Port": "27017",
+    "DBName": "phs"
+  },
+  "Redis": {
+    "Host": "127.0.0.1",
+    "Port": "6379"
+  },
+  "Security": {
+    "Secret": "<secret>"
+  },
+  "EmailInfo": {
+    "From": "<from email>",
+    "To": [
+      "<to email>"
+    ],
+    "UserName": "小灵通",
+    "AuthCode": "<auth code>",
+    "Host": "smtp.exmail.qq.com"
+  },
+  "Wechat": {
+    "AppID": "<weixin appid>",
+    "AppSecret": "<weixin app secret>"
+  },
+  "Qiniu": {
+    "AccessKey": "<access key>",
+    "SecretKey": "<secret key>",
+    "Bucket": "phs-mp"
+  }
+}
