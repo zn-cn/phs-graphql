@@ -11,13 +11,109 @@ import (
 	"util/log"
 	"util/token"
 
-	"github.com/labstack/echo"
+	"github.com/graphql-go/graphql"
 	"github.com/qiniu/api.v7/storage"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
-var logger = log.GetLogger()
+var (
+	logger         = log.GetLogger()
+	qiniuTokenType = graphql.NewObject(graphql.ObjectConfig{
+		Name:        "QiniuToken",
+		Description: "QiniuToken",
+		Fields: graphql.Fields{
+			"uploadToken": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.String),
+				Description: "uploadToken",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			"key": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.String),
+				Description: "key",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			"img": &graphql.Field{
+				Type:        graphql.NewNonNull(imgType),
+				Description: "img",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return nil, nil
+				},
+			},
+		},
+	})
+
+	qiniuTokenArgs = graphql.FieldConfigArgument{
+		"type": &graphql.ArgumentConfig{
+			Description: "类型：1 -> 作业图片, 2 -> 圈子头像, 3 -> 反馈图片",
+			Type:        graphql.NewNonNull(graphql.Int),
+		},
+		"suffix": &graphql.ArgumentConfig{
+			Description: "后缀，如：.jpg",
+			Type:        graphql.String,
+		},
+	}
+
+	imgType = graphql.NewObject(graphql.ObjectConfig{
+		Name:        "Img",
+		Description: "Img",
+		Fields: graphql.Fields{
+			"url": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.String),
+				Description: "url",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			"microUrl": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.String),
+				Description: "microUrl",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return nil, nil
+				},
+			},
+		},
+	})
+)
+
+func getQiniuToken(p graphql.ResolveParams) (interface{}, error) {
+	tokenType := p.Args["type"].(int)
+	suffix := p.Args["suffix"].(string)
+	if suffix == "" {
+		suffix = constant.ImgSuffix
+	}
+
+	imgID := uuid.NewV4().String()
+
+	imgPrefix, ok := constant.ImgPrefix[tokenType]
+	if !ok {
+		writeIndexLog("GetQiniuImgUpToken", constant.ErrorMsgParamWrong, nil)
+		return nil, constant.ErrorParamWrong
+	}
+	microImgPrefix := constant.ImgPrefixMicro[tokenType]
+	keyToOverwrite := imgPrefix + imgID + suffix
+	saveAsKey := microImgPrefix + imgID + suffix
+
+	fop := constant.ImgOps + "|saveas/" + storage.EncodedEntry(config.Conf.Qiniu.Bucket, saveAsKey)
+	persistentOps := strings.Join([]string{fop}, ";")
+	upToken := token.GetCustomUpToken(keyToOverwrite, persistentOps, constant.TokenQiniuExpire)
+
+	img := model.Img{
+		URL:      constant.ImgURIPrefix + keyToOverwrite,
+		MicroURL: constant.ImgURIPrefix + saveAsKey,
+	}
+
+	resData := map[string]interface{}{
+		"uploadToken": upToken,
+		"key":         keyToOverwrite,
+		"img":         img,
+	}
+	return resData, nil
+}
 
 /**
  * @apiDefine Login Login
@@ -120,93 +216,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"jwt_token": getJWTToken(jwtAuth),
 	}
 	resJSONData(w, resData)
-}
-
-// GetQiniuImgUpToken 获取上传图片的七牛云upload-token
-/**
- * @apiDefine GetQiniuImgUpToken GetQiniuImgUpToken
- * @apiDescription 获取上传图片的七牛云upload-token 链接：https://developer.qiniu.com/kodo/manual/1208/upload-token
- *
- * @apiParam {Number} type 类型：1 -> 作业图片, 2 -> 圈子头像, 3 -> 反馈图片
- * @apiParam {String} suffix 后缀，如：.jpg
- *
- * @apiParamExample  {query} Request-Example:
- *     {
- *       "type": 1,
- *       "suffix": ".jpg",
- *     }
- *
- * @apiSuccess {Number} status=200 状态码
- * @apiSuccess {Object} data 正确返回数据
- *
- * @apiSuccessExample Success-Response:
- *     HTTP/1.1 200 OK
- *     {
- *       "status": 200,
- *       "data": {
- *           "upload_token": "upload_token",
- *           "key": "key",
- *           "img": { // 上传到七牛云之后的url和自动持续化的缩略图：160 * 160
- *        	     "url": "url",
- *               "micro_url": "micro_url",
- *             }
- *         }
- *
- * @apiError {Number} status 状态码
- * @apiError {String} err_msg 错误信息
- *
- * @apiErrorExample Error-Response:
- *     HTTP/1.1 401 Unauthorized
- *     {
- *       "status": 401,
- *       "err_msg": "Unauthorized"
- *     }
- */
-/**
- * @api {get} /api/v1/uptoken/qiniu GetQiniuImgUpToken
- * @apiVersion 1.0.0
- * @apiName GetQiniuImgUpToken
- * @apiGroup Index
- * @apiUse GetQiniuImgUpToken
- */
-func GetQiniuImgUpToken(c echo.Context) error {
-	data := param.TypeParam{}
-	err := c.Bind(&data)
-	if err != nil {
-		writeIndexLog("GetQiniuImgUpToken", constant.ErrorMsgParamWrong, err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
-	}
-
-	imgID := uuid.NewV4().String()
-
-	suffix := c.QueryParam("suffix")
-	if suffix == "" {
-		suffix = constant.ImgSuffix
-	}
-
-	imgPrefix, ok := constant.ImgPrefix[data.Type]
-	if !ok {
-		writeIndexLog("GetQiniuImgUpToken", constant.ErrorMsgParamWrong, err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
-	}
-	microImgPrefix := constant.ImgPrefixMicro[data.Type]
-	keyToOverwrite := imgPrefix + imgID + suffix
-	saveAsKey := microImgPrefix + imgID + suffix
-
-	fop := constant.ImgOps + "|saveas/" + storage.EncodedEntry(config.Conf.Qiniu.Bucket, saveAsKey)
-	persistentOps := strings.Join([]string{fop}, ";")
-	upToken := token.GetCustomUpToken(keyToOverwrite, persistentOps, constant.TokenQiniuExpire)
-
-	img := model.Img{
-		URL:      constant.ImgURIPrefix + keyToOverwrite,
-		MicroURL: constant.ImgURIPrefix + saveAsKey,
-	}
-	resData := map[string]interface{}{
-		"upload_token": upToken,
-		"key":          keyToOverwrite,
-		"img":          img,
-	}
-	return retData(c, resData)
 }
 
 func writeIndexLog(funcName, errMsg string, err error) {

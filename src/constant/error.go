@@ -5,6 +5,7 @@ import "errors"
 const (
 	ErrorMsgParamWrong = "param wrong"
 	ErrorMsgUserCreate = "创建用户错误"
+	ErrorMsgUnAuth     = "un auth"
 )
 
 var (

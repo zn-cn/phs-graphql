@@ -2,6 +2,7 @@ package controller
 
 import (
 	"config"
+	"constant"
 	"context"
 	"net/http"
 
@@ -10,11 +11,8 @@ import (
 )
 
 var (
-	schema       graphql.Schema
-	schemaConfig graphql.SchemaConfig
-	queryType    *graphql.Object
-	mutationType *graphql.Object
-	graphiql     bool
+	handler  *gh.Handler
+	graphiql bool
 )
 
 func init() {
@@ -23,7 +21,17 @@ func init() {
 	} else {
 		graphiql = true
 	}
-	schema, _ = graphql.NewSchema(schemaConfig)
+
+	schemaConfig := graphql.SchemaConfig{
+		Query:    query,
+		Mutation: mutation,
+	}
+	schema, _ := graphql.NewSchema(schemaConfig)
+	handler = gh.New(&gh.Config{
+		Schema:   &schema,
+		Pretty:   true,
+		GraphiQL: graphiql,
+	})
 }
 
 func Graphql(w http.ResponseWriter, r *http.Request) {
@@ -31,16 +39,10 @@ func Graphql(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	user, ok := validateJWT(token)
 	if !ok {
-
+		resJSONError(w, http.StatusUnauthorized, constant.ErrorMsgUnAuth)
+		return
 	}
 
-	h := gh.New(&gh.Config{
-		Schema:   &schema,
-		Pretty:   true,
-		GraphiQL: graphiql,
-	})
-
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "user", user)
-	h.ContextHandler(ctx, w, r)
+	ctx := context.WithValue(context.Background(), "user", user)
+	handler.ContextHandler(ctx, w, r)
 }
