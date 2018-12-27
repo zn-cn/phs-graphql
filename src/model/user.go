@@ -18,19 +18,19 @@ type User struct {
 	Status int `bson:"status" json:"status"`
 
 	// WeixinUserInfo
-	Openid    string `bson:"openid" json:"openid"`         // openid
-	Unionid   string `bson:"unionid" json:"user_id"`       // unionid
-	Nickname  string `bson:"nickname" json:"nickname"`     // 用户昵称
-	Gender    int    `bson:"gender" json:"gender"`         // 性别 0：未知、1：男、2：女
-	Province  string `bson:"province" json:"province"`     // 省份
-	City      string `bson:"city" json:"city"`             // 城市
-	Country   string `bson:"country" json:"country"`       // 国家
-	AvatarURL string `bson:"avatar_url" json:"avatar_url"` // 用户头像
-	Language  string `bson:"language" json:"language"`     // 语言
+	Openid    string `bson:"openid" json:"openid"`       // openid
+	Unionid   string `bson:"unionid" json:"userID"`      // unionid
+	Nickname  string `bson:"nickname" json:"nickname"`   // 用户昵称
+	Gender    int    `bson:"gender" json:"gender"`       // 性别 0：未知、1：男、2：女
+	Province  string `bson:"province" json:"province"`   // 省份
+	City      string `bson:"city" json:"city"`           // 城市
+	Country   string `bson:"country" json:"country"`     // 国家
+	AvatarURL string `bson:"avatarUrl" json:"avatarUrl"` // 用户头像
+	Language  string `bson:"language" json:"language"`   // 语言
 
-	OwnGroups    []string `bson:"own_groups" json:"own_groups"`
-	ManageGroups []string `bson:"manage_groups" json:"manage_groups"`
-	JoinGroups   []string `bson:"join_groups" json:"join_groups"`
+	OwnGroups    []string `bson:"ownGroups" json:"ownGroups"`
+	ManageGroups []string `bson:"manageGroups" json:"manageGroups"`
+	JoinGroups   []string `bson:"joinGroups" json:"joinGroups"`
 }
 
 func CreateUser(userInfo *util.DecryptUserInfo) error {
@@ -46,9 +46,9 @@ func CreateUser(userInfo *util.DecryptUserInfo) error {
 	}
 	user := User{}
 	selector := bson.M{
-		"unionid":    1,
-		"nickname":   1,
-		"avatar_url": 1,
+		"unionid":   1,
+		"nickname":  1,
+		"avatarUrl": 1,
 	}
 
 	cntrl := db.NewCloneMgoDBCntlr()
@@ -81,15 +81,15 @@ func CreateUser(userInfo *util.DecryptUserInfo) error {
 	if userInfo.NickName != user.Nickname || userInfo.AvatarURL != user.AvatarURL {
 		update := bson.M{
 			"$set": bson.M{
-				"status":     status,
-				"openid":     userInfo.OpenID,
-				"nickname":   userInfo.NickName,
-				"avatar_url": userInfo.AvatarURL,
-				"gender":     userInfo.Gender,
-				"language":   userInfo.Language,
-				"country":    userInfo.Country,
-				"city":       userInfo.City,
-				"province":   userInfo.Province,
+				"status":    status,
+				"openid":    userInfo.OpenID,
+				"nickname":  userInfo.NickName,
+				"avatarUrl": userInfo.AvatarURL,
+				"gender":    userInfo.Gender,
+				"language":  userInfo.Language,
+				"country":   userInfo.Country,
+				"city":      userInfo.City,
+				"province":  userInfo.Province,
 			},
 		}
 		return table.Update(query, update)
@@ -174,9 +174,9 @@ func FindGroupsByUserID(unionid string) (ownGroups, manageGroups, joinGroups []s
 		"unionid": unionid,
 	}
 	selector := bson.M{
-		"own_groups":    1,
-		"manage_groups": 1,
-		"join_groups":   1,
+		"ownGroups":    1,
+		"manageGroups": 1,
+		"joinGroups":   1,
 	}
 
 	user, err := findUser(query, selector)
@@ -209,7 +209,7 @@ func AddUserOwnGroup(unionid, id string) error {
 	}
 	update := bson.M{
 		"$addToSet": bson.M{
-			"own_groups": id,
+			"ownGroups": id,
 		},
 	}
 	return table.Update(query, update)
@@ -259,16 +259,16 @@ func GetRedisUserInfos(unionids []string) ([]map[string]string, error) {
 				return nil, err
 			}
 			userInfo = map[string]string{
-				"nickname":   user.Nickname,
-				"gender":     strconv.Itoa(user.Gender),
-				"province":   user.Province,
-				"city":       user.City,
-				"country":    user.Country,
-				"avatar_url": user.AvatarURL,
-				"language":   user.Language,
+				"nickname":  user.Nickname,
+				"gender":    strconv.Itoa(user.Gender),
+				"province":  user.Province,
+				"city":      user.City,
+				"country":   user.Country,
+				"avatarUrl": user.AvatarURL,
+				"language":  user.Language,
 			}
 		}
-		userInfo["user_id"] = unionid
+		userInfo["userID"] = unionid
 		resData[i] = userInfo
 	}
 	return resData, nil
@@ -279,13 +279,13 @@ func setRedisUserInfo(unionid string) (User, error) {
 		"unionid": unionid,
 	}
 	selector := bson.M{
-		"nickname":   1,
-		"gender":     1,
-		"province":   1,
-		"city":       1,
-		"country":    1,
-		"avatar_url": 1,
-		"language":   1,
+		"nickname":  1,
+		"gender":    1,
+		"province":  1,
+		"city":      1,
+		"country":   1,
+		"avatarUrl": 1,
+		"language":  1,
 	}
 	user, err := findUser(query, selector)
 	if err != nil {
@@ -307,7 +307,7 @@ func setRedisUserInfo(unionid string) (User, error) {
 		user.City,
 		"country",
 		user.Country,
-		"avatar_url",
+		"avatarUrl",
 		user.AvatarURL,
 		"language",
 		user.Language,

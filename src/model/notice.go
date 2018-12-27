@@ -18,20 +18,20 @@ type Notice struct {
 	Type   int           `bson:"type" json:"type"`     // 类型：1表示前一天发送通知，2表示前两天发送通知
 	Status int           `bson:"status" json:"status"` // 状态: -10 删除状态, -1表示过期状态，5表示发布状态
 
-	CreatorID string `bson:"creator_id" json:"creator_id"` // unionid
-	GroupID   string `bson:"group_id" json:"group_id"`     // _id
+	CreatorID string `bson:"creatorID" json:"creatorID"` // unionid
+	GroupID   string `bson:"groupID" json:"groupID"`     // _id
 
 	Title      string `bson:"title" json:"title"` // 标题
 	Content    string `bson:"content" json:"content"`
 	Imgs       []Img  `bson:"imgs" json:"imgs"`
-	Note       string `bson:"note" json:"note"`               // 备注
-	CreateTime int64  `bson:"create_time" json:"create_time"` // 创建时间
-	NoticeTime int64  `bson:"notice_time" json:"notice_time"` // 提醒时间
+	Note       string `bson:"note" json:"note"`             // 备注
+	CreateTime int64  `bson:"createTime" json:"createTime"` // 创建时间
+	NoticeTime int64  `bson:"noticeTime" json:"noticeTime"` // 提醒时间
 
-	WatchUsers []string `bson:"watch_users" json:"watch_users"` // 查看用户
-	WatchNum   int      `bson:"watch_num" json:"watch_num"`     // 查看人数
-	LikeUsers  []string `bson:"like_users" json:"like_users"`   // 点赞用户
-	LikeNum    int      `bson:"like_num" json:"like_num"`       // 点赞人数
+	WatchUsers []string `bson:"watchUsers" json:"watchUsers"` // 查看用户
+	WatchNum   int      `bson:"watchNum" json:"watchNum"`     // 查看人数
+	LikeUsers  []string `bson:"likeUsers" json:"likeUsers"`   // 点赞用户
+	LikeNum    int      `bson:"likeNum" json:"likeNum"`       // 点赞人数
 }
 
 func CreateNotices(userID string, notices []Notice) error {
@@ -64,7 +64,7 @@ func setRedisUserWeekNotice(notices []Notice) error {
 	defer redisCntrl.Close()
 
 	selector := bson.M{
-		"owner_id": 1,
+		"ownerID":  1,
 		"managers": 1,
 		"members":  1,
 	}
@@ -105,7 +105,7 @@ func GetNotice(id string) (Notice, error) {
 
 func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 	query := bson.M{
-		"group_id": bson.M{
+		"groupID": bson.M{
 			"$in": groups,
 		},
 		"status": bson.M{
@@ -113,12 +113,12 @@ func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 		},
 	}
 	selector := bson.M{
-		"watch_users": 0,
-		"like_users":  0,
+		"watchUsers": 0,
+		"likeUsers":  0,
 	}
 	fields := []string{
 		"-status",
-		"notice_time",
+		"noticeTime",
 	}
 	notices, err := findNotices(query, selector, page, perPage, fields...)
 	if err != nil {
@@ -148,8 +148,8 @@ func UpdateNotice(noticeID, userID string, updateData map[string]interface{}) er
 		return constant.ErrorIDFormatWrong
 	}
 	query := bson.M{
-		"_id":        bson.ObjectIdHex(noticeID),
-		"creator_id": userID,
+		"_id":       bson.ObjectIdHex(noticeID),
+		"creatorID": userID,
 		"status": bson.M{
 			"$gte": constant.NoticePubStatus,
 		},
@@ -168,17 +168,17 @@ func SendDayNotice() error {
 	defer cntrl.Close()
 	noticeTable := cntrl.GetTable(constant.TableNotice)
 	query := bson.M{
-		"notice_time": bson.M{
+		"noticeTime": bson.M{
 			"$gt": now,
 			"$lt": nextDayEnd,
 		},
 	}
 
 	selector := bson.M{
-		"watch_users": 0,
-		"watch_num":   0,
-		"like_users":  0,
-		"like_num":    0,
+		"watchUsers": 0,
+		"watchNum":   0,
+		"likeUsers":  0,
+		"likeNum":    0,
 	}
 	notices := []Notice{}
 	noticeTable.Find(query).Select(selector).All(&notices)
@@ -192,7 +192,7 @@ func SendDayNotice() error {
 	templates := []WechatTemplate{}
 	for _, notice := range notices {
 		selector = bson.M{
-			"owner_id": 1,
+			"ownerID":  1,
 			"managers": 1,
 			"members":  1,
 		}
@@ -250,9 +250,9 @@ func SendWeekNotice() error {
 	prefixLen := len(p) - 1
 
 	selector := bson.M{
-		"title":       1,
-		"content":     1,
-		"notice_time": 1,
+		"title":      1,
+		"content":    1,
+		"noticeTime": 1,
 	}
 
 	for _, key := range keys {
@@ -289,7 +289,7 @@ func UpdateExpireNotice() error {
 		"status": bson.M{
 			"$gte": constant.NoticePubStatus,
 		},
-		"notice_time": bson.M{
+		"noticeTime": bson.M{
 			"$lt": now,
 		},
 	}

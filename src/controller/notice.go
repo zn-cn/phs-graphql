@@ -309,7 +309,7 @@ func updateNotice(p graphql.ResolveParams) (interface{}, error) {
 			updateData["note"] = data.Note
 		}
 		if data.NoticeTime > util.GetNowTimestamp() {
-			updateData["notice_time"] = data.NoticeTime
+			updateData["noticeTime"] = data.NoticeTime
 		}
 		if len(data.Imgs) > 0 {
 			updateData["imgs"] = data.Imgs
@@ -335,12 +335,12 @@ func updateNotice(p graphql.ResolveParams) (interface{}, error) {
 		if data.NoticeTime <= util.GetNowTimestamp() {
 			err = constant.ErrorParamWrong
 		}
-		updateData["notice_time"] = data.NoticeTime
+		updateData["noticeTime"] = data.NoticeTime
 	case constant.ReqNoticeUpdateGroupIDType:
 		if data.GroupID == "" {
 			err = constant.ErrorParamWrong
 		}
-		updateData["group_id"] = data.GroupID
+		updateData["groupID"] = data.GroupID
 	default:
 		err = constant.ErrorParamWrong
 	}

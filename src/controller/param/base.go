@@ -24,7 +24,7 @@ type IDParam struct {
 }
 
 type GroupIDParam struct {
-	GroupID string `json:"group_id" query:"group_id" validate:"required"`
+	GroupID string `json:"groupID" query:"groupID" validate:"required"`
 }
 
 type CodeParam struct {
@@ -32,10 +32,10 @@ type CodeParam struct {
 }
 
 type UserIDsParam struct {
-	UserIDs []string `json:"user_ids" query:"user_ids"`
+	UserIDs []string `json:"userIDs" query:"userIDs"`
 }
 
 type AvatarNicknameParam struct {
 	Nickname  string `json:"nickname" query:"nickname"`
-	AvatarURL string `json:"avatar_url" query:"avatar_url"`
+	AvatarURL string `json:"avatarUrl" query:"avatarUrl"`
 }

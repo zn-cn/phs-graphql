@@ -42,7 +42,7 @@ var (
  * @apiSuccessExample Success-Response:
  *     HTTP/1.1 200 OK
  *     {
- *        "jwt_token": "jwt_token",  // 有效时间为七天，发过来的时候需要在前面加上"Bearer "
+ *        "jwtToken": "jwt token",  // 有效时间为七天，发过来的时候需要在前面加上"Bearer "
  *     }
  *
  * @apiError {Number} status 状态码
@@ -108,11 +108,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jwtAuth := map[string]interface{}{
-		"user_id": userInfo.UnionID,
+		"userID": userInfo.UnionID,
 	}
 
 	resData := map[string]interface{}{
-		"jwt_token": getJWTToken(jwtAuth),
+		"jwtToken": getJWTToken(jwtAuth),
 	}
 	resJSONData(w, resData)
 }

@@ -138,8 +138,8 @@ func getGroupQrcode(p graphql.ResolveParams) (interface{}, error) {
 		return nil, constant.ErrorBadGateway
 	}
 	resData := map[string]interface{}{
-		"url":        res.URL,
-		"ticket_url": fmt.Sprintf(constant.URLQrcodeTicket, res.Ticket),
+		"url":       res.URL,
+		"ticketUrl": fmt.Sprintf(constant.URLQrcodeTicket, res.Ticket),
 	}
 	return resData, nil
 }

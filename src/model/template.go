@@ -19,7 +19,7 @@ type Template struct {
 	CreatorID string   `bson:"creatorID" json:"creatorID"` // 创建者 unionid
 	Notices   []Notice `bson:"notices" json:"notices"`     // 模板内容
 
-	CreateTime int64 `bson:"createTime" json:"create_time"` // 创建时间毫秒时间戳
+	CreateTime int64 `bson:"createTime" json:"createTime"` // 创建时间毫秒时间戳
 }
 
 // WechatTemplate 微信模板

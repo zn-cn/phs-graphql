@@ -18,7 +18,7 @@ type Error struct {
 }
 
 func getJWTUserID(p graphql.ResolveParams) string {
-	return p.Context.Value(constant.JWTContextKey).(jwt.MapClaims)["user_id"].(string)
+	return p.Context.Value(constant.JWTContextKey).(jwt.MapClaims)["userID"].(string)
 }
 
 func getJWTToken(auth map[string]interface{}) string {

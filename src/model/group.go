@@ -20,13 +20,13 @@ type Group struct {
 	Status int    `bson:"status" json:"status"`
 	Code   string `bson:"code" json:"code"` // 圈子code -> 邀请码, unique
 
-	AvatarURL  string   `bson:"avatar_url" json:"avatar_url"`   // 群头像
-	Nickname   string   `bson:"nickname" json:"nickname"`       // 圈子昵称
-	OwnerID    string   `bson:"owner_id" json:"owner_id"`       // unionid 注：以下三种身份不会重复，如：members中不会有owner
-	CreateTime int64    `bson:"create_time" json:"create_time"` // 创建时间
-	Managers   []string `bson:"managers" json:"managers"`       // 管理员
-	Members    []string `bson:"members" json:"members"`         // 成员
-	PersonNum  int      `bson:"person_num" json:"person_num"`   // 总人数：1 + 管理员人数 + 成员人数
+	AvatarURL  string   `bson:"avatarUrl" json:"avatarUrl"`   // 群头像
+	Nickname   string   `bson:"nickname" json:"nickname"`     // 圈子昵称
+	OwnerID    string   `bson:"ownerID" json:"ownerID"`       // unionid 注：以下三种身份不会重复，如：members中不会有owner
+	CreateTime int64    `bson:"createTime" json:"createTime"` // 创建时间
+	Managers   []string `bson:"managers" json:"managers"`     // 管理员
+	Members    []string `bson:"members" json:"members"`       // 成员
+	PersonNum  int      `bson:"personNum" json:"personNum"`   // 总人数：1 + 管理员人数 + 成员人数
 }
 
 var groupCodeNextNumMutex sync.Mutex
@@ -97,7 +97,7 @@ func groupAction(code, unionid string, isJoin bool) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"owner_id": bson.M{
+		"ownerID": bson.M{
 			"$ne": unionid,
 		},
 		"managers": bson.M{
@@ -116,7 +116,7 @@ func groupAction(code, unionid string, isJoin bool) error {
 				"members": unionid,
 			},
 			"$inc": bson.M{
-				"person_num": 1,
+				"personNum": 1,
 			},
 		}
 	} else {
@@ -125,7 +125,7 @@ func groupAction(code, unionid string, isJoin bool) error {
 				"members": unionid,
 			},
 			"$inc": bson.M{
-				"person_num": -1,
+				"personNum": -1,
 			},
 		}
 	}
@@ -141,13 +141,13 @@ func groupAction(code, unionid string, isJoin bool) error {
 	if isJoin {
 		update = bson.M{
 			"$addToSet": bson.M{
-				"join_groups": group.ID.Hex(),
+				"joinGroups": group.ID.Hex(),
 			},
 		}
 	} else {
 		update = bson.M{
 			"$pull": bson.M{
-				"join_groups": group.ID.Hex(),
+				"joinGroups": group.ID.Hex(),
 			},
 		}
 	}
@@ -169,8 +169,8 @@ func UpdateGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	groupTable := cntrl.GetTable(constant.TableGroup)
 
 	query := bson.M{
-		"_id":      bson.ObjectIdHex(groupID),
-		"owner_id": ownerID,
+		"_id":     bson.ObjectIdHex(groupID),
+		"ownerID": ownerID,
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
@@ -178,7 +178,7 @@ func UpdateGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"owner_id": toUserIDs[0],
+			"ownerID": toUserIDs[0],
 		},
 		"$pull": bson.M{
 			"managers": toUserIDs[0],
@@ -198,7 +198,7 @@ func UpdateGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"own_groups": groupID,
+			"ownGroups": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)
@@ -212,7 +212,7 @@ func UpdateGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$addToSet": bson.M{
-			"own_groups": groupID,
+			"ownGroups": groupID,
 		},
 	}
 	return userTable.Update(query, update)
@@ -230,8 +230,8 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	groupTable := cntrl.GetTable(constant.TableGroup)
 
 	query := bson.M{
-		"_id":      bson.ObjectIdHex(groupID),
-		"owner_id": ownerID,
+		"_id":     bson.ObjectIdHex(groupID),
+		"ownerID": ownerID,
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
@@ -239,7 +239,7 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 
 	group := Group{}
 	selector := bson.M{
-		"owner_id": 1,
+		"ownerID":  1,
 		"managers": 1,
 		"members":  1,
 	}
@@ -266,7 +266,7 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"own_groups": groupID,
+			"ownGroups": groupID,
 		},
 	}
 	userTable.Update(query, update)
@@ -278,7 +278,7 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"manage_groups": groupID,
+			"manageGroups": groupID,
 		},
 	}
 	userTable.UpdateAll(query, update)
@@ -290,7 +290,7 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"join_groups": groupID,
+			"joinGroups": groupID,
 		},
 	}
 	userTable.UpdateAll(query, update)
@@ -308,8 +308,8 @@ func SetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	groupTable := cntrl.GetTable(constant.TableGroup)
 
 	query := bson.M{
-		"_id":      bson.ObjectIdHex(groupID),
-		"owner_id": ownerID,
+		"_id":     bson.ObjectIdHex(groupID),
+		"ownerID": ownerID,
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
@@ -341,7 +341,7 @@ func SetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$addToSet": bson.M{
-			"manage_groups": groupID,
+			"manageGroups": groupID,
 		},
 	}
 	userTable.UpdateAll(query, update)
@@ -353,7 +353,7 @@ func SetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"join_groups": groupID,
+			"joinGroups": groupID,
 		},
 	}
 	_, err = userTable.UpdateAll(query, update)
@@ -371,8 +371,8 @@ func UnSetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	groupTable := cntrl.GetTable(constant.TableGroup)
 
 	query := bson.M{
-		"_id":      bson.ObjectIdHex(groupID),
-		"owner_id": ownerID,
+		"_id":     bson.ObjectIdHex(groupID),
+		"ownerID": ownerID,
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
@@ -403,10 +403,10 @@ func UnSetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"manage_groups": groupID,
+			"manageGroups": groupID,
 		},
 		"$addToSet": bson.M{
-			"join_groups": groupID,
+			"joinGroups": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)
@@ -425,8 +425,8 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	groupTable := cntrl.GetTable(constant.TableGroup)
 
 	query := bson.M{
-		"_id":      bson.ObjectIdHex(groupID),
-		"owner_id": ownerID,
+		"_id":     bson.ObjectIdHex(groupID),
+		"ownerID": ownerID,
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
@@ -439,7 +439,7 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 			"managers": toUserIDs,
 		},
 		"$inc": bson.M{
-			"person_num": -len(toUserIDs),
+			"personNum": -len(toUserIDs),
 		},
 	}
 
@@ -455,7 +455,7 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"manage_groups": groupID,
+			"manageGroups": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)
@@ -480,7 +480,7 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 		},
 		"$or": []bson.M{
 			bson.M{
-				"owner_id": userID,
+				"ownerID": userID,
 			},
 			bson.M{
 				"managers": userID,
@@ -495,7 +495,7 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 			"members": toUserIDs,
 		},
 		"$inc": bson.M{
-			"person_num": -len(toUserIDs),
+			"personNum": -len(toUserIDs),
 		},
 	}
 
@@ -511,7 +511,7 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"join_groups": groupID,
+			"joinGroups": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)
@@ -578,7 +578,7 @@ func GetRedisGroupInfos(ids []string) ([]map[string]string, error) {
 				return res, err
 			}
 			data["nickname"] = group.Nickname
-			data["avatar_url"] = group.AvatarURL
+			data["avatarUrl"] = group.AvatarURL
 			data["code"] = group.Code
 		}
 		data["id"] = id
@@ -595,9 +595,9 @@ func setRedisGroupInfo(id string) (group Group, err error) {
 		},
 	}
 	selector := bson.M{
-		"nickname":   1,
-		"avatar_url": 1,
-		"code":       1,
+		"nickname":  1,
+		"avatarUrl": 1,
+		"code":      1,
 	}
 	group, err = findGroup(query, selector)
 	if err != nil {
@@ -607,7 +607,7 @@ func setRedisGroupInfo(id string) (group Group, err error) {
 	args := []interface{}{
 		"nickname",
 		group.Nickname,
-		"avatar_url",
+		"avatarUrl",
 		group.AvatarURL,
 		"code",
 		group.Code,
