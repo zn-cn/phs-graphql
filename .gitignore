@@ -12,3 +12,5 @@
 *.out
 
 pkg/
+log/
+data/

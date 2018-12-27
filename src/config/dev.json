@@ -4,13 +4,13 @@
   },
   "DB": {
     "Host": "mongo",
-    "User": "<username>",
-    "PW": "<password>",
+    "User": "test",
+    "PW": "password",
     "AdminDBName": "admin"
   },
   "Redis": {
     "Host": "redis",
-    "PW": "<password>"
+    "PW": "password"
   },
   "Qiniu": {
     "AccessKey": "<qiniu access key>",
