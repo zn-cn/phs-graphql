@@ -8,6 +8,7 @@ import (
 	"util/token"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/graphql-go/graphql"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/labstack/echo"
 )
@@ -17,12 +18,16 @@ type Error struct {
 	ErrCode int    `json:"err_code"`
 }
 
+func getJWTUserID(p graphql.ResolveParams) string {
+	return p.Context.Value(constant.JWTContextKey).(jwt.MapClaims)["user_id"].(string)
+}
+
 func getJWTToken(auth map[string]interface{}) string {
 	return token.GetJWTToken(auth, config.Conf.Security.Secret, constant.JWTExpire)
 }
 
 func validateJWT(tokenStr string) (jwt.MapClaims, bool) {
-	return token.ValidateJWT(tokenStr, config.Conf.Security.Secret)
+	return token.ValidateJWT(constant.JWTAuthScheme, tokenStr, config.Conf.Security.Secret)
 }
 
 func loadJSONData(r *http.Request, to interface{}) error {
@@ -81,9 +86,4 @@ func retData(c echo.Context, data interface{}) error {
 		Status: 200,
 		Data:   data,
 	})
-}
-
-// jwt
-func getJWTUserID(c echo.Context) string {
-	return c.Get(constant.JWTContextKey).(*jwt.Token).Claims.(jwt.MapClaims)["user_id"].(string)
 }

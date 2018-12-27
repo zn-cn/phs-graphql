@@ -16,10 +16,10 @@ type Template struct {
 	Type   int           `bson:"type" json:"type"`     // 类型：
 	Status int           `bson:"status" json:"status"` // 状态:
 
-	Creator string   `bson:"creator" json:"creator"` // _id
-	Notices []Notice `bson:"notices" json:"notices"` // 模板内容
+	CreatorID string   `bson:"creatorID" json:"creatorID"` // 创建者 unionid
+	Notices   []Notice `bson:"notices" json:"notices"`     // 模板内容
 
-	CreateTime int64 `bson:"create_time" json:"create_time"` // 创建时间
+	CreateTime int64 `bson:"createTime" json:"create_time"` // 创建时间毫秒时间戳
 }
 
 // WechatTemplate 微信模板

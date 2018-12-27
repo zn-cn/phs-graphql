@@ -1,8 +1,5 @@
 package controller
 
-/*
-   圈子群体
-*/
 import (
 	"constant"
 	"controller/param"
@@ -10,7 +7,57 @@ import (
 	"model"
 	"net/http"
 
+	"github.com/graphql-go/graphql"
 	"github.com/labstack/echo"
+)
+
+var (
+	groupType = graphql.NewObject(graphql.ObjectConfig{
+		Name:        "Group",
+		Description: "Group",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type:        graphql.ID,
+				Description: "id",
+			},
+			"status": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "状态: -10 表示解散状态, 5 表示正常状态",
+			},
+			"code": &graphql.Field{
+				Type:        graphql.ID,
+				Description: "圈子code -> 邀请码, unique",
+			},
+			"nickname": &graphql.Field{
+				Type:        graphql.String,
+				Description: "昵称",
+			},
+			"avatarUrl": &graphql.Field{
+				Type:        graphql.String,
+				Description: "用户头像",
+			},
+			"ownerID": &graphql.Field{
+				Type:        graphql.String,
+				Description: "unionid 注：以下三种身份不会重复，如：members中不会有owner",
+			},
+			"createTime": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "创建时间毫秒时间戳",
+			},
+			"managers": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Description: "管理员",
+			},
+			"members": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Description: "成员",
+			},
+			"personNum": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "总人数：1 + 管理员人数 + 成员人数",
+			},
+		},
+	})
 )
 
 /**
@@ -64,7 +111,7 @@ import (
  * @apiUse GetGroups
  */
 func GetGroups(c echo.Context) error {
-	userID := getJWTUserID(c)
+	userID := ""
 	ownGroups, manageGroups, joinGroups, err := findGroupInfosByUserID(userID)
 	if err != nil {
 		writeGroupLog("GetGroups", "查询群组信息错误", err)
@@ -202,7 +249,7 @@ func CreateGroup(c echo.Context) error {
 		// 使用默认头像
 		data.AvatarURL = constant.ImgDefaultGraoupHead
 	}
-	userID := getJWTUserID(c)
+	userID := ""
 	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
 		model.SetUserFollowStatus(userID, isFollow)
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, "你还没有关注公众号")
@@ -264,7 +311,7 @@ func JoinGroup(c echo.Context) error {
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 	}
 
-	userID := getJWTUserID(c)
+	userID := ""
 	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
 		model.SetUserFollowStatus(userID, isFollow)
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, "你还没有关注公众号")
@@ -322,7 +369,7 @@ func LeaveGroup(c echo.Context) error {
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 	}
 
-	userID := getJWTUserID(c)
+	userID := ""
 	err = model.LeaveGroup(data.Code, userID)
 	if err != nil {
 		writeGroupLog("LeaveGroup", "离开群组失败", err)
@@ -389,7 +436,7 @@ func UpdateGroupMembers(c echo.Context) error {
 		constant.ReqGroupDelMemberType:    model.DelGroupMember,
 	}
 	if f, ok := update[data.Type]; ok {
-		userID := getJWTUserID(c)
+		userID := ""
 		err = f(data.GroupID, userID, data.UserIDs)
 	} else {
 		err = constant.ErrorParamWrong

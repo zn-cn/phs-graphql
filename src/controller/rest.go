@@ -1,119 +1,19 @@
 package controller
 
 import (
-	"config"
 	"constant"
 	"controller/param"
 	"model"
 	"net/http"
-	"strings"
 	"util"
 	"util/log"
-	"util/token"
 
-	"github.com/graphql-go/graphql"
-	"github.com/qiniu/api.v7/storage"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	logger         = log.GetLogger()
-	qiniuTokenType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "QiniuToken",
-		Description: "QiniuToken",
-		Fields: graphql.Fields{
-			"uploadToken": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "uploadToken",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
-			"key": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "key",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
-			"img": &graphql.Field{
-				Type:        graphql.NewNonNull(imgType),
-				Description: "img",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
-		},
-	})
-
-	qiniuTokenArgs = graphql.FieldConfigArgument{
-		"type": &graphql.ArgumentConfig{
-			Description: "类型：1 -> 作业图片, 2 -> 圈子头像, 3 -> 反馈图片",
-			Type:        graphql.NewNonNull(graphql.Int),
-		},
-		"suffix": &graphql.ArgumentConfig{
-			Description: "后缀，如：.jpg",
-			Type:        graphql.String,
-		},
-	}
-
-	imgType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "Img",
-		Description: "Img",
-		Fields: graphql.Fields{
-			"url": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "url",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
-			"microUrl": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "microUrl",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
-		},
-	})
+	logger = log.GetLogger()
 )
-
-func getQiniuToken(p graphql.ResolveParams) (interface{}, error) {
-	tokenType := p.Args["type"].(int)
-	suffix := p.Args["suffix"].(string)
-	if suffix == "" {
-		suffix = constant.ImgSuffix
-	}
-
-	imgID := uuid.NewV4().String()
-
-	imgPrefix, ok := constant.ImgPrefix[tokenType]
-	if !ok {
-		writeIndexLog("GetQiniuImgUpToken", constant.ErrorMsgParamWrong, nil)
-		return nil, constant.ErrorParamWrong
-	}
-	microImgPrefix := constant.ImgPrefixMicro[tokenType]
-	keyToOverwrite := imgPrefix + imgID + suffix
-	saveAsKey := microImgPrefix + imgID + suffix
-
-	fop := constant.ImgOps + "|saveas/" + storage.EncodedEntry(config.Conf.Qiniu.Bucket, saveAsKey)
-	persistentOps := strings.Join([]string{fop}, ";")
-	upToken := token.GetCustomUpToken(keyToOverwrite, persistentOps, constant.TokenQiniuExpire)
-
-	img := model.Img{
-		URL:      constant.ImgURIPrefix + keyToOverwrite,
-		MicroURL: constant.ImgURIPrefix + saveAsKey,
-	}
-
-	resData := map[string]interface{}{
-		"uploadToken": upToken,
-		"key":         keyToOverwrite,
-		"img":         img,
-	}
-	return resData, nil
-}
 
 /**
  * @apiDefine Login Login
@@ -167,14 +67,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	data := param.WeixinLoginData{}
 	err := loadJSONData(r, &data)
 	if err != nil {
-		writeIndexLog("Login", constant.ErrorMsgParamWrong, err)
+		writeRestLog("Login", constant.ErrorMsgParamWrong, err)
 		resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 		return
 	}
 
 	weixinSessRes, err := model.GetWeixinSession(data.Code)
 	if err != nil {
-		writeIndexLog("Login", constant.ErrorMsgParamWrong, err)
+		writeRestLog("Login", constant.ErrorMsgParamWrong, err)
 		resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 		return
 	}
@@ -183,7 +83,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if weixinSessRes.Unionid == "" {
 		userInfo, err = model.DecryptWeixinEncryptedData(weixinSessRes.SessionKey, data.EncryptedData, data.Iv)
 		if err != nil {
-			writeIndexLog("Login", constant.ErrorMsgParamWrong, err)
+			writeRestLog("Login", constant.ErrorMsgParamWrong, err)
 			resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 			return
 		}
@@ -203,7 +103,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	err = model.CreateUser(userInfo)
 	if err != nil {
-		writeIndexLog("Login", constant.ErrorMsgUserCreate, err)
+		writeRestLog("Login", constant.ErrorMsgUserCreate, err)
 		resJSONError(w, http.StatusBadGateway, constant.ErrorMsgUserCreate)
 		return
 	}
@@ -218,8 +118,73 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	resJSONData(w, resData)
 }
 
-func writeIndexLog(funcName, errMsg string, err error) {
-	writeLog("index.go", funcName, errMsg, err)
+/**
+ * @apiDefine JoinGroupFromOfficialAccounts JoinGroupFromOfficialAccounts
+ * @apiDescription 加入群组(不对前端开放)
+ *
+ * @apiParam {String} code 圈子code
+ * @apiParam {String} id unionid
+ *
+ * @apiParamExample  {json} Request-Example:
+ *     {
+ *       "code": "圈子code"
+ *       "id": "unionid"
+ *     }
+ *
+ * @apiSuccess {Number} status=200 状态码
+ * @apiSuccess {Object} data 正确返回数据
+ *
+ * @apiSuccessExample Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *     }
+ * @apiError {Number} status 状态码
+ * @apiError {String} err_msg 错误信息
+ *
+ * @apiErrorExample Error-Response:
+ *     HTTP/1.1 401 Unauthorized
+ *     {
+ *       "err_msg": "Unauthorized"
+ *     }
+ */
+/**
+ * @api {post} /api/unopen/group/action/join JoinGroupFromOfficialAccounts
+ * @apiVersion 1.0.0
+ * @apiName JoinGroupFromOfficialAccounts
+ * @apiGroup UnOpen
+ * @apiUse JoinGroupFromOfficialAccounts
+ */
+func JoinGroupFromOfficialAccounts(w http.ResponseWriter, r *http.Request) {
+	data := param.CodeID{}
+	err := loadJSONData(r, &data)
+	if err != nil {
+		writeRestLog("JoinGroupFromOfficialAccounts", constant.ErrorMsgParamWrong, err)
+		resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
+		return
+	}
+
+	if data.ID == "" || data.Code == "" {
+		writeRestLog("JoinGroupFromOfficialAccounts", constant.ErrorMsgParamWrong, err)
+		resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
+		return
+	}
+
+	model.CreateUserByUnionid(data.ID)
+	err = model.JoinGroup(data.Code, data.ID)
+	if err != nil {
+		writeRestLog("JoinGroupFromOfficialAccounts", "加入群组失败", err)
+		resJSONError(w, http.StatusBadGateway, "加入群组失败")
+		return
+	}
+
+	// 发送模板消息
+	go model.SendGroupJoinTemplate(data.ID, data.Code)
+
+	resJSONData(w, nil)
+}
+
+func writeRestLog(funcName, errMsg string, err error) {
+	writeLog("rest.go", funcName, errMsg, err)
 }
 
 func writeLog(fileName, funcName, errMsg string, err error) {

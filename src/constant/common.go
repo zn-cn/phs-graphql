@@ -54,6 +54,7 @@ const (
 
 	TokenQiniuExpire = 7200
 	JWTContextKey    = "user"
+	JWTAuthScheme    = "Bearer"
 	JWTExpire        = time.Hour * 24 * 7
 
 	/****************************************** other ****************************************/

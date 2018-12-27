@@ -22,8 +22,8 @@ type Group struct {
 
 	AvatarURL  string   `bson:"avatar_url" json:"avatar_url"`   // 群头像
 	Nickname   string   `bson:"nickname" json:"nickname"`       // 圈子昵称
-	CreateTime int64    `bson:"create_time" json:"create_time"` // 创建时间
 	OwnerID    string   `bson:"owner_id" json:"owner_id"`       // unionid 注：以下三种身份不会重复，如：members中不会有owner
+	CreateTime int64    `bson:"create_time" json:"create_time"` // 创建时间
 	Managers   []string `bson:"managers" json:"managers"`       // 管理员
 	Members    []string `bson:"members" json:"members"`         // 成员
 	PersonNum  int      `bson:"person_num" json:"person_num"`   // 总人数：1 + 管理员人数 + 成员人数

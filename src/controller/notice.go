@@ -1,8 +1,5 @@
 package controller
 
-/*
-   通知
-*/
 import (
 	"constant"
 	"controller/param"
@@ -10,7 +7,78 @@ import (
 	"net/http"
 	"util"
 
+	"github.com/graphql-go/graphql"
+
 	"github.com/labstack/echo"
+)
+
+var (
+	noticeType = graphql.NewObject(graphql.ObjectConfig{
+		Name:        "Notice",
+		Description: "通知",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type:        graphql.ID,
+				Description: "id",
+			},
+			"type": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "类型：1表示前一天发送通知，2表示前两天发送通知",
+			},
+			"status": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "状态: -10 表示解散状态, 5 表示正常状态",
+			},
+			"creatorID": &graphql.Field{
+				Type:        graphql.ID,
+				Description: "创建者 unionid",
+			},
+			"groupID": &graphql.Field{
+				Type:        graphql.ID,
+				Description: "群组 _id",
+			},
+			"title": &graphql.Field{
+				Type:        graphql.String,
+				Description: "标题",
+			},
+			"content": &graphql.Field{
+				Type:        graphql.String,
+				Description: "内容",
+			},
+			"imgs": &graphql.Field{
+				Type:        graphql.NewList(imgType),
+				Description: "图片",
+			},
+			"note": &graphql.Field{
+				Type:        graphql.String,
+				Description: "备注",
+			},
+			"createTime": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "创建时间毫秒时间戳",
+			},
+			"noticeTime": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "提醒时间毫秒时间戳",
+			},
+			"watchUsers": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Description: "查看用户",
+			},
+			"watchNum": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "查看人数",
+			},
+			"likeUsers": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Description: "点赞用户",
+			},
+			"likeNum": &graphql.Field{
+				Type:        graphql.Int,
+				Description: "点赞人数",
+			},
+		},
+	})
 )
 
 /**
@@ -91,7 +159,7 @@ func GetNotices(c echo.Context) error {
 		writeNoticeLog("GetNotices", constant.ErrorMsgParamWrong, err)
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 	}
-	userID := getJWTUserID(c)
+	userID := ""
 	var groups []string
 	if data.Type == constant.ReqNoticeGetAllType {
 		ownGroups, manageGroups, joinGroups, err := model.FindGroupsByUserID(userID)
@@ -181,7 +249,7 @@ func CreateNotices(c echo.Context) error {
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 	}
 
-	userID := getJWTUserID(c)
+	userID := ""
 	err = model.CreateNotices(userID, data.Notices)
 	if err != nil {
 		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, err)
@@ -343,7 +411,7 @@ func UpdateNotice(c echo.Context) error {
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 	}
 
-	userID := getJWTUserID(c)
+	userID := ""
 	err = model.UpdateNotice(data.ID.Hex(), userID, updateData)
 	if err != nil {
 		writeNoticeLog("UpdateNotice", "更新通知失败", err)
@@ -397,7 +465,7 @@ func DeleteNotice(c echo.Context) error {
 		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 	}
 
-	userID := getJWTUserID(c)
+	userID := ""
 	updateData := map[string]interface{}{
 		"status": constant.NoticeDeleteStatus,
 	}

@@ -1,5 +1,6 @@
 package controller
 
+// 定时器
 import "model"
 
 func StartHourTimer() {
