@@ -17,4 +17,5 @@ var (
 	ErrorParamWrong    = errors.New("param is wrong")
 	ErrorUnAuth        = errors.New("un auth")
 	ErrorEmpty         = errors.New("empty error")
+	ErrorUnFollow      = errors.New("你还没有关注公众号")
 )

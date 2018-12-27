@@ -6,23 +6,39 @@ import (
 	"fmt"
 	"model"
 	"net/http"
+	"util"
 
 	"github.com/graphql-go/graphql"
 	"github.com/labstack/echo"
 )
 
 var (
+	groupStatusEnumType = graphql.NewEnum(graphql.EnumConfig{
+		Name:        "groupStatusEnum",
+		Description: "圈子状态",
+		Values: graphql.EnumValueConfigMap{
+			"delete": &graphql.EnumValueConfig{
+				Value:       constant.GroupDelStatus,
+				Description: "解散状态",
+			},
+			"common": &graphql.EnumValueConfig{
+				Value:       constant.GroupCommonStatus,
+				Description: "正常状态",
+			},
+		},
+	})
+
 	groupType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "Group",
-		Description: "Group",
+		Name:        "group",
+		Description: "group",
 		Fields: graphql.Fields{
 			"id": &graphql.Field{
 				Type:        graphql.ID,
 				Description: "id",
 			},
 			"status": &graphql.Field{
-				Type:        graphql.Int,
-				Description: "状态: -10 表示解散状态, 5 表示正常状态",
+				Type:        groupStatusEnumType,
+				Description: "状态",
 			},
 			"code": &graphql.Field{
 				Type:        graphql.ID,
@@ -59,6 +75,150 @@ var (
 		},
 	})
 )
+var createGroupArgs = graphql.FieldConfigArgument{
+	"nickname": &graphql.ArgumentConfig{
+		Description: "昵称",
+		Type:        graphql.NewNonNull(graphql.String),
+	},
+	"avatarUrl": &graphql.ArgumentConfig{
+		Description:  "圈子头像",
+		Type:         graphql.String,
+		DefaultValue: constant.ImgDefaultGraoupHead,
+	},
+}
+
+func createGroup(p graphql.ResolveParams) (interface{}, error) {
+	nickname := p.Args["nickname"].(string)
+	avatarURL := p.Args["avatarURL"].(string)
+	userID := ""
+	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
+		model.SetUserFollowStatus(userID, isFollow)
+		return nil, constant.ErrorUnFollow
+	}
+	code, err := model.CreateGroup(userID, nickname, avatarURL)
+	if err != nil {
+		writeGroupLog("CreateGroup", "创建群组失败", err)
+		return nil, err
+	}
+
+	resData := map[string]string{
+		"code": code,
+	}
+	return resData, nil
+}
+
+var codeArgs = graphql.FieldConfigArgument{
+	"code": &graphql.ArgumentConfig{
+		Description: "圈子code",
+		Type:        graphql.NewNonNull(graphql.String),
+	},
+}
+
+func joinGroup(p graphql.ResolveParams) (interface{}, error) {
+	code := p.Args["code"].(string)
+	userID := getJWTUserID(p)
+
+	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
+		model.SetUserFollowStatus(userID, isFollow)
+		return false, constant.ErrorUnFollow
+	}
+	err := model.JoinGroup(code, userID)
+	if err != nil {
+		writeGroupLog("joinGroup", "加入群组失败", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func leaveGroup(p graphql.ResolveParams) (interface{}, error) {
+	code := p.Args["code"].(string)
+	userID := getJWTUserID(p)
+
+	err := model.LeaveGroup(code, userID)
+	if err != nil {
+		writeGroupLog("leaveGroup", "离开群组失败", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+var updateGroupMembersEnumType = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "updateGroupMembersEnumTypeEnum",
+	Description: "更新类型",
+	Values: graphql.EnumValueConfigMap{
+		"UpdateOwner": &graphql.EnumValueConfig{
+			Value:       constant.ReqGroupUpdateOwnerType,
+			Description: "更新拥有者(转让群组，且只能转给管理员)",
+		},
+		"DelOwner": &graphql.EnumValueConfig{
+			Value:       constant.ReqGroupDelOwnerType,
+			Description: "删除拥有者，即解散群组",
+		},
+		"SetManager": &graphql.EnumValueConfig{
+			Value:       constant.ReqGroupSetManagerType,
+			Description: "设置管理者",
+		},
+		"UnSetManager": &graphql.EnumValueConfig{
+			Value:       constant.ReqGroupUnSetManagerType,
+			Description: "取消管理员权限",
+		},
+		"DelManager": &graphql.EnumValueConfig{
+			Value:       constant.ReqGroupDelManagerType,
+			Description: "删除管理员",
+		},
+		"DelMember": &graphql.EnumValueConfig{
+			Value:       constant.ReqGroupDelMemberType,
+			Description: "删除成员",
+		},
+	},
+})
+
+var updateGroupMembersArgs = graphql.FieldConfigArgument{
+	"type": &graphql.ArgumentConfig{
+		Description: "更新类型",
+		Type:        graphql.NewNonNull(updateGroupMembersEnumType),
+	},
+	"groupID": &graphql.ArgumentConfig{
+		Description: "群组id",
+		Type:        graphql.String,
+	},
+	"userIDs": &graphql.ArgumentConfig{
+		Description: " 用户unionid数组, type=1时 数组长度为1, type=2时 数组长度为0",
+		Type:        graphql.NewList(graphql.String),
+	},
+}
+
+func updateGroupMembers(p graphql.ResolveParams) (interface{}, error) {
+	data := param.TypeGroupIDUserIDs{}
+	err := util.MapToJSONStruct(p.Args, &data)
+	if err != nil {
+		writeGroupLog("updateGroupMembers", constant.ErrorMsgParamWrong, err)
+		return false, err
+	}
+
+	update := map[int]func(string, string, []string) error{
+		constant.ReqGroupUpdateOwnerType:  model.UpdateGroupOwner,
+		constant.ReqGroupDelOwnerType:     model.DelGroupOwner,
+		constant.ReqGroupSetManagerType:   model.SetGroupManager,
+		constant.ReqGroupUnSetManagerType: model.UnSetGroupManager,
+		constant.ReqGroupDelManagerType:   model.DelGroupManager,
+		constant.ReqGroupDelMemberType:    model.DelGroupMember,
+	}
+	if f, ok := update[data.Type]; ok {
+		userID := ""
+		err = f(data.GroupID, userID, data.UserIDs)
+	} else {
+		err = constant.ErrorParamWrong
+	}
+
+	if err != nil {
+		writeGroupLog("updateGroupMembers", "更新失败", err)
+		return false, err
+	}
+	return true, nil
+}
 
 /**
  * @apiDefine GetGroups GetGroups
@@ -194,259 +354,6 @@ func findGroupInfosByUserID(userID string) ([]map[string]string, []map[string]st
 	ownGroupsLen := len(ownGroups)
 	manageGroupsLen := len(manageGroups)
 	return groupInfos[:ownGroupsLen], groupInfos[ownGroupsLen : ownGroupsLen+manageGroupsLen], groupInfos[ownGroupsLen+manageGroupsLen:], nil
-}
-
-/**
- * @apiDefine CreateGroup CreateGroup
- * @apiDescription 创建群组
- *
- * @apiParam {String} avatar_url 圈子头像链接
- * @apiParam {String} nickname 群昵称
- *
- * @apiParamExample  {json} Request-Example:
- *     {
- *       "avatar_url": "圈子头像"，
- *       "nickname": "软件1601",
- *     }
- *
- * @apiSuccess {Number} status=200 状态码
- * @apiSuccess {Object} data 正确返回数据
- *
- * @apiSuccessExample Success-Response:
- *     HTTP/1.1 200 OK
- *     {
- *       "status": 200,
- *       "data": {
- *           "code": String, // 唯一群code，同时也是邀请码
- *         }
- *     }
- * @apiError {Number} status 状态码
- * @apiError {String} err_msg 错误信息
- *
- * @apiErrorExample Error-Response:
- *     HTTP/1.1 401 Unauthorized
- *     {
- *       "status": 401,
- *       "err_msg": "Unauthorized"
- *     }
- */
-/**
- * @api {post} /api/v1/group CreateGroup
- * @apiVersion 1.0.0
- * @apiName CreateGroup
- * @apiGroup Group
- * @apiUse CreateGroup
- */
-func CreateGroup(c echo.Context) error {
-	data := param.AvatarNicknameParam{}
-	err := c.Bind(&data)
-	if err != nil {
-		writeGroupLog("CreateGroup", constant.ErrorMsgParamWrong, err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
-	}
-
-	if data.AvatarURL == "" {
-		// 使用默认头像
-		data.AvatarURL = constant.ImgDefaultGraoupHead
-	}
-	userID := ""
-	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
-		model.SetUserFollowStatus(userID, isFollow)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, "你还没有关注公众号")
-	}
-	code, err := model.CreateGroup(userID, data.Nickname, data.AvatarURL)
-	if err != nil {
-		writeGroupLog("CreateGroup", "创建群组失败", err)
-		return retError(c, http.StatusBadGateway, http.StatusBadGateway, err.Error())
-	}
-
-	resData := map[string]string{
-		"code": code,
-	}
-	return retData(c, resData)
-}
-
-/**
- * @apiDefine JoinGroup JoinGroup
- * @apiDescription 加入群组
- *
- * @apiParam {String} code 圈子code
- *
- * @apiParamExample  {json} Request-Example:
- *     {
- *       "code": "圈子code"
- *     }
- *
- * @apiSuccess {Number} status=200 状态码
- * @apiSuccess {Object} data 正确返回数据
- *
- * @apiSuccessExample Success-Response:
- *     HTTP/1.1 200 OK
- *     {
- *       "status": 200,
- *       "data": ""
- *     }
- * @apiError {Number} status 状态码
- * @apiError {String} err_msg 错误信息
- *
- * @apiErrorExample Error-Response:
- *     HTTP/1.1 401 Unauthorized
- *     {
- *       "status": 401,
- *       "err_msg": "Unauthorized"
- *     }
- */
-/**
- * @api {post} /api/v1/group/action/join JoinGroup
- * @apiVersion 1.0.0
- * @apiName JoinGroup
- * @apiGroup Group
- * @apiUse JoinGroup
- */
-func JoinGroup(c echo.Context) error {
-	data := param.CodeParam{}
-	err := c.Bind(&data)
-	if err != nil {
-		writeGroupLog("JoinGroup", constant.ErrorMsgParamWrong, err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
-	}
-
-	userID := ""
-	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
-		model.SetUserFollowStatus(userID, isFollow)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, "你还没有关注公众号")
-	}
-	err = model.JoinGroup(data.Code, userID)
-	if err != nil {
-		writeGroupLog("JoinGroup", "加入群组失败", err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, "加入群组失败")
-	}
-	return retData(c, "")
-}
-
-/**
- * @apiDefine LeaveGroup LeaveGroup
- * @apiDescription 离开群组
- *
- * @apiParam {String} code 圈子code
- *
- * @apiParamExample  {json} Request-Example:
- *     {
- *       "code": "圈子code"
- *     }
- *
- * @apiSuccess {Number} status=200 状态码
- * @apiSuccess {Object} data 正确返回数据
- *
- * @apiSuccessExample Success-Response:
- *     HTTP/1.1 200 OK
- *     {
- *       "status": 200,
- *       "data": ""
- *     }
- * @apiError {Number} status 状态码
- * @apiError {String} err_msg 错误信息
- *
- * @apiErrorExample Error-Response:
- *     HTTP/1.1 401 Unauthorized
- *     {
- *       "status": 401,
- *       "err_msg": "Unauthorized"
- *     }
- */
-/**
- * @api {post} /api/v1/group/action/leave LeaveGroup
- * @apiVersion 1.0.0
- * @apiName LeaveGroup
- * @apiGroup Group
- * @apiUse LeaveGroup
- */
-func LeaveGroup(c echo.Context) error {
-	data := param.CodeParam{}
-	err := c.Bind(&data)
-	if err != nil {
-		writeGroupLog("LeaveGroup", constant.ErrorMsgParamWrong, err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
-	}
-
-	userID := ""
-	err = model.LeaveGroup(data.Code, userID)
-	if err != nil {
-		writeGroupLog("LeaveGroup", "离开群组失败", err)
-		return retError(c, http.StatusBadGateway, http.StatusBadGateway, "离开群组失败")
-	}
-	return retData(c, "")
-}
-
-/**
- * @apiDefine UpdateGroupMembers UpdateGroupMembers
- * @apiDescription 更新群组成员, 按照权限限制: 创建者 > 管理员 > 成员, 如：管理员可以删除成员
- *
- * @apiParam {Number} type 类型：1->更新拥有者(转让群组，且只能转给管理员), 2->删除拥有者，即解散群组, 3->设置管理者, 4->取消管理员权限, 5->删除管理员，6->删除成员
- * @apiParam {String} group_id 群组id
- * @apiParam {Array} user_ids 用户id数组
- *
- * @apiParamExample  {json} Request-Example:
- *     {
- *       "type": 1，
- *       "group_id": "group_id"，// 群组id
- *       "user_ids": ["user_id"]，// 用户unionid数组, type=1时 数组长度为1, type=2时 数组长度为0
- *     }
- *
- * @apiSuccess {Number} status=200 状态码
- * @apiSuccess {Object} data 正确返回数据
- *
- * @apiSuccessExample Success-Response:
- *     HTTP/1.1 200 OK
- *     {
- *       "status": 200,
- *       "data": ""
- *     }
- * @apiError {Number} status 状态码
- * @apiError {String} err_msg 错误信息
- *
- * @apiErrorExample Error-Response:
- *     HTTP/1.1 401 Unauthorized
- *     {
- *       "status": 401,
- *       "err_msg": "Unauthorized"
- *     }
- */
-/**
- * @api {put} /api/v1/group/member/list UpdateGroupMembers
- * @apiVersion 1.0.0
- * @apiName UpdateGroupMembers
- * @apiGroup Group
- * @apiUse UpdateGroupMembers
- */
-func UpdateGroupMembers(c echo.Context) error {
-	data := param.TypeGroupIDUserIDs{}
-	err := c.Bind(&data)
-	if err != nil {
-		writeGroupLog("UpdateGroupMembers", constant.ErrorMsgParamWrong, err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, constant.ErrorMsgParamWrong)
-	}
-
-	update := map[int]func(string, string, []string) error{
-		constant.ReqGroupUpdateOwnerType:  model.UpdateGroupOwner,
-		constant.ReqGroupDelOwnerType:     model.DelGroupOwner,
-		constant.ReqGroupSetManagerType:   model.SetGroupManager,
-		constant.ReqGroupUnSetManagerType: model.UnSetGroupManager,
-		constant.ReqGroupDelManagerType:   model.DelGroupManager,
-		constant.ReqGroupDelMemberType:    model.DelGroupMember,
-	}
-	if f, ok := update[data.Type]; ok {
-		userID := ""
-		err = f(data.GroupID, userID, data.UserIDs)
-	} else {
-		err = constant.ErrorParamWrong
-	}
-
-	if err != nil {
-		writeGroupLog("UpdateGroupMembers", "更新失败", err)
-		return retError(c, http.StatusBadRequest, http.StatusBadRequest, "更新失败")
-	}
-	return retData(c, "")
 }
 
 /**

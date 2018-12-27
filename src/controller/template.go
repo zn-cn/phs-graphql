@@ -17,7 +17,7 @@ var (
 			},
 			"status": &graphql.Field{
 				Type:        graphql.Int,
-				Description: "状态:",
+				Description: "状态",
 			},
 			"creatorID": &graphql.Field{
 				Type:        graphql.ID,

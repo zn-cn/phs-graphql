@@ -23,3 +23,22 @@ const (
 	ReqNoticeUpdateNoticeTimeType
 	ReqNoticeUpdateGroupIDType
 )
+
+const (
+	ImgTypeHomework = iota + 1
+	ImgTypeHead
+	ImgTypeFeedback
+)
+
+var (
+	ImgPrefix = map[int]string{
+		ImgTypeHomework: ImgPrefixHomework,
+		ImgTypeHead:     ImgPrefixHead,
+		ImgTypeFeedback: ImgPrefixFeedback,
+	}
+	ImgPrefixMicro = map[int]string{
+		ImgTypeHomework: ImgPrefixMicroHomework,
+		ImgTypeHead:     ImgPrefixMicroHead,
+		ImgTypeFeedback: ImgPrefixMicroFeedback,
+	}
+)

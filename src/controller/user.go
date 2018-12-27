@@ -1,23 +1,43 @@
 package controller
 
 import (
+	"constant"
 	"model"
 
 	"github.com/graphql-go/graphql"
 )
 
 var (
+	userStatusEnumType = graphql.NewEnum(graphql.EnumConfig{
+		Name:        "userStatusEnum",
+		Description: "用户状态",
+		Values: graphql.EnumValueConfigMap{
+			"delete": &graphql.EnumValueConfig{
+				Value:       constant.UserDeleteStatus,
+				Description: "被删除",
+			},
+			"unFollow": &graphql.EnumValueConfig{
+				Value:       constant.UserUnFollowStatus,
+				Description: "没有关注公众号",
+			},
+			"follow": &graphql.EnumValueConfig{
+				Value:       constant.UserFollowStatus,
+				Description: "已经关注公众号的普通用户",
+			},
+		},
+	})
+
 	userType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "User",
-		Description: "User",
+		Name:        "user",
+		Description: "user",
 		Fields: graphql.Fields{
 			"id": &graphql.Field{
 				Type:        graphql.ID,
 				Description: "id",
 			},
 			"status": &graphql.Field{
-				Type:        graphql.Int,
-				Description: "状态:  -10表示被删除，0 表示没有关注公众号，5 表示已经关注公众号的普通用户",
+				Type:        userStatusEnumType,
+				Description: "状态",
 			},
 			"openid": &graphql.Field{
 				Type:        graphql.ID,

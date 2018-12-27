@@ -14,8 +14,8 @@ import (
 
 var (
 	qiniuTokenType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "QiniuToken",
-		Description: "QiniuToken",
+		Name:        "qiniuToken",
+		Description: "qiniuToken",
 		Fields: graphql.Fields{
 			"uploadToken": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
@@ -32,20 +32,40 @@ var (
 		},
 	})
 
+	qiniuTokenTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
+		Name:        "qiniuTokenTypeEnum",
+		Description: "七牛Token类型",
+		Values: graphql.EnumValueConfigMap{
+			"homework": &graphql.EnumValueConfig{
+				Value:       constant.ImgTypeHomework,
+				Description: "作业图片",
+			},
+			"head": &graphql.EnumValueConfig{
+				Value:       constant.ImgTypeHead,
+				Description: "头像",
+			},
+			"feedback": &graphql.EnumValueConfig{
+				Value:       constant.ImgTypeFeedback,
+				Description: "反馈图片",
+			},
+		},
+	})
+
 	qiniuTokenArgs = graphql.FieldConfigArgument{
 		"type": &graphql.ArgumentConfig{
-			Description: "类型：1 -> 作业图片, 2 -> 圈子头像, 3 -> 反馈图片",
-			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "类型",
+			Type:        graphql.NewNonNull(qiniuTokenTypeEnumType),
 		},
 		"suffix": &graphql.ArgumentConfig{
-			Description: "后缀，如：.jpg",
-			Type:        graphql.String,
+			Description:  "后缀，如：.jpg",
+			Type:         graphql.String,
+			DefaultValue: constant.ImgSuffix,
 		},
 	}
 
 	imgType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "Img",
-		Description: "Img",
+		Name:        "img",
+		Description: "img",
 		Fields: graphql.Fields{
 			"url": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
@@ -68,9 +88,6 @@ var (
 func getQiniuToken(p graphql.ResolveParams) (interface{}, error) {
 	tokenType := p.Args["type"].(int)
 	suffix := p.Args["suffix"].(string)
-	if suffix == "" {
-		suffix = constant.ImgSuffix
-	}
 
 	imgID := uuid.NewV4().String()
 

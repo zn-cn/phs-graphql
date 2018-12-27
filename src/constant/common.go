@@ -39,10 +39,6 @@ const (
 
 	ImgSuffix = ".jpg"
 
-	ImgTypeHomeWork = 1
-	ImgTypeHead     = 2
-	ImgTypeFeedback = 3
-
 	ImgPrefixHomework      = "mp/homework/"
 	ImgPrefixMicroHomework = "mp/homework/micro/"
 	ImgPrefixHead          = "mp/head/"
@@ -63,17 +59,4 @@ const (
 	APIPrefix = "/api/v1"
 
 	EmailFeedbackNotice = "联系方式：%s <br /> 反馈内容：%s <br />"
-)
-
-var (
-	ImgPrefix = map[int]string{
-		ImgTypeHomeWork: ImgPrefixHomework,
-		ImgTypeHead:     ImgPrefixHead,
-		ImgTypeFeedback: ImgPrefixFeedback,
-	}
-	ImgPrefixMicro = map[int]string{
-		ImgTypeHomeWork: ImgPrefixMicroHomework,
-		ImgTypeHead:     ImgPrefixMicroHead,
-		ImgTypeFeedback: ImgPrefixMicroFeedback,
-	}
 )

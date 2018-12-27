@@ -26,6 +26,12 @@ func init() {
 	timeUtil.WeekStartDay = time.Monday
 }
 
+// MapToJSONStruct convert map to struct
+func MapToJSONStruct(from map[string]interface{}, to interface{}) error {
+	b, _ := jsoniter.Marshal(from)
+	return jsoniter.Unmarshal(b, &to)
+}
+
 // JSONStructToMap convert struct to map
 func JSONStructToMap(obj interface{}) map[string]interface{} {
 	jsonBytes, _ := jsoniter.Marshal(obj)

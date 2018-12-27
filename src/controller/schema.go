@@ -11,14 +11,9 @@ import (
 )
 
 var (
-	handler  *gh.Handler
-	query    *graphql.Object
-	mutation *graphql.Object
-)
-
-func init() {
-	query = graphql.NewObject(graphql.ObjectConfig{
-		Name: "Query",
+	handler *gh.Handler
+	query   = graphql.NewObject(graphql.ObjectConfig{
+		Name: "query",
 		Fields: graphql.Fields{
 			"qiniuToken": &graphql.Field{
 				Type:        qiniuTokenType,
@@ -44,25 +39,62 @@ func init() {
 			},
 		},
 	})
-
 	mutation = graphql.NewObject(graphql.ObjectConfig{
-		Name: "Mutation",
+		Name: "mutation",
 		Fields: graphql.Fields{
-			"createGroup": &graphql.Field{
+			"createFeedback": &graphql.Field{
 				Type:        graphql.Boolean,
+				Description: "创建反馈",
+				Args:        createFeedbackArgs,
+				Resolve:     createFeedback,
+			},
+			"createGroup": &graphql.Field{
+				Type:        groupType,
 				Description: "创建群组",
+				Args:        createGroupArgs,
+				Resolve:     createGroup,
 			},
 			"joinGroup": &graphql.Field{
 				Type:        graphql.Boolean,
 				Description: "加入群组",
+				Args:        codeArgs,
+				Resolve:     joinGroup,
 			},
 			"leaveGroup": &graphql.Field{
 				Type:        graphql.Boolean,
 				Description: "离开群组",
+				Args:        codeArgs,
+				Resolve:     leaveGroup,
+			},
+			"updateGroupMembers": &graphql.Field{
+				Type:        graphql.Boolean,
+				Description: "更新群组成员, 按照权限限制: 创建者 > 管理员 > 成员, 如：管理员可以删除成员",
+				Args:        updateGroupMembersArgs,
+				Resolve:     updateGroupMembers,
+			},
+			"createNotices": &graphql.Field{
+				Type:        graphql.Boolean,
+				Description: "创建提醒",
+				Args:        noticesArgs,
+				Resolve:     createNotices,
+			},
+			"updateNotice": &graphql.Field{
+				Type:        graphql.Boolean,
+				Description: "更新提醒",
+				Args:        noticeArgs,
+				Resolve:     updateNotice,
+			},
+			"deleteNotice": &graphql.Field{
+				Type:        graphql.Boolean,
+				Description: "删除提醒, 参数只需要id",
+				Args:        noticeArgs,
+				Resolve:     deleteNotice,
 			},
 		},
 	})
+)
 
+func init() {
 	schemaConfig := graphql.SchemaConfig{
 		Query:    query,
 		Mutation: mutation,
@@ -73,10 +105,11 @@ func init() {
 	if config.Conf.AppInfo.Env == "prod" {
 		graphiql = false
 	}
+
 	handler = gh.New(&gh.Config{
 		Schema:   &schema,
-		Pretty:   true,
 		GraphiQL: graphiql,
+		Pretty:   graphiql,
 	})
 }
 
@@ -90,6 +123,6 @@ func Graphql(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.WithValue(context.Background(), "user", user)
+	ctx := context.WithValue(context.Background(), constant.JWTContextKey, user)
 	handler.ContextHandler(ctx, w, r)
 }
