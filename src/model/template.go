@@ -48,6 +48,16 @@ type Error struct {
 
 // 模板草稿通过 redis 存储, 取出即删redis草稿
 
+func GetTemplate(id string) (Template, error) {
+	if !bson.IsObjectIdHex(id) {
+		return Template{}, constant.ErrorIDFormatWrong
+	}
+	query := bson.M{
+		"_id": bson.ObjectIdHex(id),
+	}
+	return findTemplate(query, DefaultSelector)
+}
+
 func SendGroupJoinTemplate(unionid, groupCode string) error {
 	cntrl := db.NewCloneMgoDBCntlr()
 	defer cntrl.Close()
@@ -162,4 +172,23 @@ func sendOfficeAccountTemplate(templates []WechatTemplate) ([]TemplateResult, er
 	}{}
 	err = resp.ToJSON(&resData)
 	return resData.Data, err
+}
+
+/****************************************** template basic action ****************************************/
+
+func findTemplate(query, selectField interface{}) (Template, error) {
+	data := Template{}
+	cntrl := db.NewCopyMgoDBCntlr()
+	defer cntrl.Close()
+	table := cntrl.GetTable(constant.TableTemplate)
+	err := table.Find(query).Select(selectField).One(&data)
+	return data, err
+}
+
+func updateTemplate(query, update interface{}) error {
+	return updateDoc(constant.TableTemplate, query, update)
+}
+
+func insertTemplates(docs ...interface{}) error {
+	return insertDocs(constant.TableTemplate, docs...)
 }

@@ -29,9 +29,7 @@ type Group struct {
 	PersonNum  int      `bson:"person_num" json:"person_num"`   // 总人数：1 + 管理员人数 + 成员人数
 }
 
-var (
-	groupCodeNextNumMutex sync.Mutex
-)
+var groupCodeNextNumMutex sync.Mutex
 
 func init() {
 	InitGroupCodeNextNum()
@@ -75,9 +73,9 @@ func CreateGroup(unionid, nickname, avatarURL string) (string, error) {
 	return code, err
 }
 
-func GetGroup(id string) (Group, error) {
+func GetGroupByCode(code string) (Group, error) {
 	query := bson.M{
-		"_id": bson.ObjectIdHex(id),
+		"code": code,
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
@@ -521,30 +519,6 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 	return err
 }
 
-func getGroupCode() (string, error) {
-	cntrl := db.NewRedisDBCntlr()
-	defer cntrl.Close()
-
-	len, _ := cntrl.LLEN(constant.RedisGroupCodePool)
-	if len == 0 {
-		groupCodeNextNumMutex.Lock()
-		nextNum, _ := cntrl.GETInt64(constant.RedisGroupCodeNextNum)
-		if nextNum == 0 {
-			return "", errors.New("next_num wrong")
-		}
-		codePool := make([]interface{}, constant.RedisGroupCodePoolNum)
-		for i := 0; i < constant.RedisGroupCodePoolNum; i++ {
-			nextNum++
-			codePool[i] = string(util.Base34(uint64(nextNum)))
-		}
-		cntrl.RPUSH(constant.RedisGroupCodePool, codePool...)
-		cntrl.SET(constant.RedisGroupCodeNextNum, nextNum)
-		groupCodeNextNumMutex.Unlock()
-	}
-
-	return cntrl.LPOP(constant.RedisGroupCodePool)
-}
-
 /****************************************** group basic action ****************************************/
 
 func findGroup(query, selectField interface{}) (Group, error) {
@@ -565,6 +539,30 @@ func insertGroups(docs ...interface{}) error {
 }
 
 /****************************************** group redis action ****************************************/
+
+func getGroupCode() (string, error) {
+	cntrl := db.NewRedisDBCntlr()
+	defer cntrl.Close()
+
+	len, _ := cntrl.LLEN(constant.RedisGroupCodePool)
+	if len == 0 {
+		groupCodeNextNumMutex.Lock()
+		nextNum, _ := cntrl.GETInt64(constant.RedisGroupCodeNextNum)
+		if nextNum == 0 {
+			return "", errors.New("next_num wrong")
+		}
+		codePool := make([]interface{}, constant.RedisGroupCodePoolNum)
+		for i := 0; i < constant.RedisGroupCodePoolNum; i++ {
+			nextNum++
+			codePool[i] = string(util.Base34(uint64(nextNum)))
+		}
+		cntrl.RPUSH(constant.RedisGroupCodePool, codePool...)
+		cntrl.INCRBY(constant.RedisGroupCodeNextNum, constant.RedisGroupCodePoolNum)
+		groupCodeNextNumMutex.Unlock()
+	}
+
+	return cntrl.LPOP(constant.RedisGroupCodePool)
+}
 
 func GetRedisGroupInfos(ids []string) ([]map[string]string, error) {
 	cntrl := db.NewRedisDBCntlr()

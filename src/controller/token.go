@@ -12,78 +12,76 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-var (
-	qiniuTokenType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "qiniuToken",
-		Description: "qiniuToken",
-		Fields: graphql.Fields{
-			"uploadToken": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "uploadToken",
-			},
-			"key": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "key",
-			},
-			"img": &graphql.Field{
-				Type:        graphql.NewNonNull(imgType),
-				Description: "img",
-			},
+var qiniuTokenTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "qiniuTokenTypeEnum",
+	Description: "七牛Token类型",
+	Values: graphql.EnumValueConfigMap{
+		"homework": &graphql.EnumValueConfig{
+			Value:       constant.ImgTypeHomework,
+			Description: "作业图片",
 		},
-	})
+		"head": &graphql.EnumValueConfig{
+			Value:       constant.ImgTypeHead,
+			Description: "头像",
+		},
+		"feedback": &graphql.EnumValueConfig{
+			Value:       constant.ImgTypeFeedback,
+			Description: "反馈图片",
+		},
+	},
+})
 
-	qiniuTokenTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
-		Name:        "qiniuTokenTypeEnum",
-		Description: "七牛Token类型",
-		Values: graphql.EnumValueConfigMap{
-			"homework": &graphql.EnumValueConfig{
-				Value:       constant.ImgTypeHomework,
-				Description: "作业图片",
-			},
-			"head": &graphql.EnumValueConfig{
-				Value:       constant.ImgTypeHead,
-				Description: "头像",
-			},
-			"feedback": &graphql.EnumValueConfig{
-				Value:       constant.ImgTypeFeedback,
-				Description: "反馈图片",
-			},
-		},
-	})
+var qiniuTokenArgs = graphql.FieldConfigArgument{
+	"type": &graphql.ArgumentConfig{
+		Description: "类型",
+		Type:        graphql.NewNonNull(qiniuTokenTypeEnumType),
+	},
+	"suffix": &graphql.ArgumentConfig{
+		Description:  "后缀，如：.jpg",
+		Type:         graphql.String,
+		DefaultValue: constant.ImgSuffix,
+	},
+}
 
-	qiniuTokenArgs = graphql.FieldConfigArgument{
-		"type": &graphql.ArgumentConfig{
-			Description: "类型",
-			Type:        graphql.NewNonNull(qiniuTokenTypeEnumType),
+var imgType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "img",
+	Description: "img",
+	Fields: graphql.Fields{
+		"url": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "url",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return nil, nil
+			},
 		},
-		"suffix": &graphql.ArgumentConfig{
-			Description:  "后缀，如：.jpg",
-			Type:         graphql.String,
-			DefaultValue: constant.ImgSuffix,
+		"microUrl": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "microUrl",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return nil, nil
+			},
 		},
-	}
+	},
+})
 
-	imgType = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "img",
-		Description: "img",
-		Fields: graphql.Fields{
-			"url": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "url",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
-			"microUrl": &graphql.Field{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "microUrl",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
-			},
+var qiniuTokenType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "qiniuToken",
+	Description: "qiniuToken",
+	Fields: graphql.Fields{
+		"uploadToken": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "uploadToken",
 		},
-	})
-)
+		"key": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "key",
+		},
+		"img": &graphql.Field{
+			Type:        graphql.NewNonNull(imgType),
+			Description: "img",
+		},
+	},
+})
 
 func getQiniuToken(p graphql.ResolveParams) (interface{}, error) {
 	tokenType := p.Args["type"].(int)

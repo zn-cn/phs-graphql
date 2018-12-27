@@ -18,4 +18,5 @@ var (
 	ErrorUnAuth        = errors.New("un auth")
 	ErrorEmpty         = errors.New("empty error")
 	ErrorUnFollow      = errors.New("你还没有关注公众号")
+	ErrorBadGateway    = errors.New("服务器错误")
 )

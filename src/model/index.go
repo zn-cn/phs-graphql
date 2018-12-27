@@ -5,35 +5,17 @@ import (
 	"math/rand"
 	"model/db"
 	"time"
-	"util/log"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/mgo.v2/bson"
 )
 
 var (
 	DefaultSelector bson.M = bson.M{}
-	logger                 = log.GetLogger()
 )
 
 func getRedisDefaultExpire() int64 {
 	rand.Seed(time.Now().UnixNano())
 	return constant.RedisDefaultExpire + rand.Int63n(constant.RedisDefaultRandExpire)
-}
-
-/****************************************** log ****************************************/
-
-func writeIndexLog(funcName, errMsg string, err error) {
-	writeLog("index.go", funcName, errMsg, err)
-}
-
-func writeLog(fileName, funcName, errMsg string, err error) {
-	logger.WithFields(logrus.Fields{
-		"package":  "model",
-		"file":     fileName,
-		"function": funcName,
-		"err":      err,
-	}).Warn(errMsg)
 }
 
 /****************************************** db basic action ****************************************/

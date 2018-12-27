@@ -4,8 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -86,7 +87,7 @@ func (w *WXBizDataCrypt) Decrypt(encryptedData, iv string) (*DecryptUserInfo, er
 	}
 
 	var userInfo DecryptUserInfo
-	err = json.Unmarshal(cipherText, &userInfo)
+	err = jsoniter.Unmarshal(cipherText, &userInfo)
 	if err != nil {
 		return nil, err
 	}

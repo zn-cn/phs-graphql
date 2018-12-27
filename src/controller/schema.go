@@ -12,82 +12,98 @@ import (
 
 var (
 	handler *gh.Handler
-	query   = graphql.NewObject(graphql.ObjectConfig{
+
+	query = graphql.NewObject(graphql.ObjectConfig{
 		Name: "query",
 		Fields: graphql.Fields{
 			"qiniuToken": &graphql.Field{
+				Args:        qiniuTokenArgs,
 				Type:        qiniuTokenType,
 				Description: "获取上传图片的七牛云upload-token 链接：https://developer.qiniu.com/kodo/manual/1208/upload-token",
-				Args:        qiniuTokenArgs,
 				Resolve:     getQiniuToken,
 			},
 			"user": &graphql.Field{
+				Args:        userArgs,
 				Type:        userType,
 				Description: "获取用户信息",
+				Resolve:     getUserByUnionid,
 			},
 			"notice": &graphql.Field{
+				Args:        idArgs,
 				Type:        noticeType,
 				Description: "获取通知信息",
+				Resolve:     getNotice,
+			},
+			"notices": &graphql.Field{
+				Args:        noticePageArgs,
+				Type:        graphql.NewList(noticeType),
+				Description: "获取通知列表",
+				Resolve:     getNotices,
 			},
 			"group": &graphql.Field{
+				Args:        codeArgs,
 				Type:        groupType,
 				Description: "获取圈子信息",
+				Resolve:     getGroupByCode,
 			},
 			"template": &graphql.Field{
+				Args:        idArgs,
 				Type:        templateType,
 				Description: "获取模板信息",
+				Resolve:     getTemplate,
 			},
 		},
 	})
+
 	mutation = graphql.NewObject(graphql.ObjectConfig{
 		Name: "mutation",
 		Fields: graphql.Fields{
 			"createFeedback": &graphql.Field{
+				Args:        createFeedbackArgs,
 				Type:        graphql.Boolean,
 				Description: "创建反馈",
-				Args:        createFeedbackArgs,
 				Resolve:     createFeedback,
 			},
 			"createGroup": &graphql.Field{
+				Args:        createGroupArgs,
 				Type:        groupType,
 				Description: "创建群组",
-				Args:        createGroupArgs,
 				Resolve:     createGroup,
 			},
 			"joinGroup": &graphql.Field{
+				Args:        codeArgs,
 				Type:        graphql.Boolean,
 				Description: "加入群组",
-				Args:        codeArgs,
 				Resolve:     joinGroup,
 			},
 			"leaveGroup": &graphql.Field{
+				Args:        codeArgs,
 				Type:        graphql.Boolean,
 				Description: "离开群组",
-				Args:        codeArgs,
 				Resolve:     leaveGroup,
 			},
 			"updateGroupMembers": &graphql.Field{
+				Args:        updateGroupMembersArgs,
 				Type:        graphql.Boolean,
 				Description: "更新群组成员, 按照权限限制: 创建者 > 管理员 > 成员, 如：管理员可以删除成员",
-				Args:        updateGroupMembersArgs,
 				Resolve:     updateGroupMembers,
 			},
 			"createNotices": &graphql.Field{
+				Args:        noticesArgs,
 				Type:        graphql.Boolean,
 				Description: "创建提醒",
-				Args:        noticesArgs,
 				Resolve:     createNotices,
 			},
 			"updateNotice": &graphql.Field{
+				Args:        noticeArgs,
 				Type:        graphql.Boolean,
 				Description: "更新提醒",
-				Args:        noticeArgs,
 				Resolve:     updateNotice,
 			},
 			"deleteNotice": &graphql.Field{
+				Args:        idArgs,
 				Type:        graphql.Boolean,
-				Description: "删除提醒, 参数只需要id",
-				Args:        noticeArgs,
+				Description: "删除提醒",
 				Resolve:     deleteNotice,
 			},
 		},

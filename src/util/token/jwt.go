@@ -4,7 +4,6 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
 )
 
 func GetJWTToken(data map[string]interface{}, secret string, expire time.Duration) (token string) {
@@ -31,12 +30,4 @@ func ValidateJWT(authScheme, token, secret string) (jwt.MapClaims, bool) {
 		return nil, t.Valid
 	}
 	return claims, t.Valid
-}
-
-// old
-// GetJWTInfo 获取 payload
-func GetJWTInfo(c echo.Context) jwt.MapClaims {
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	return claims
 }

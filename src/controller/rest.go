@@ -6,13 +6,12 @@ import (
 	"model"
 	"net/http"
 	"util"
-	"util/log"
 
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	logger = log.GetLogger()
+	logger = util.GetLogger()
 )
 
 /**

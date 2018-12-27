@@ -18,6 +18,7 @@
 
 ### 简介
 
+针对班级作业通知的小公举，确保通知到每一位同学，作业写了吗
 
 #### 认证：
 
@@ -62,5 +63,12 @@ bucket：php-mp
 + 图片前缀
 
   域名：`<image host>`
+
+
+参考链接：
+
+- [graphql-go](https://github.com/graphql-go/graphql)
+- [graphql-go-handler](https://github.com/graphql-go/handler)
+- [graphql](https://graphql.org/learn/queries/)
 
   ​

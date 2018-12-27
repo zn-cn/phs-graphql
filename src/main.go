@@ -34,5 +34,6 @@ func startTimer() {
 	c.AddFunc(constant.TimerBackUpdate, controller.StartBackUpdate)
 	c.AddFunc(constant.TimerSendDayNotice, controller.StartDayTimer)
 	c.AddFunc(constant.TimerSendWeekNotice, controller.StartWeekTimer)
+
 	c.Start()
 }

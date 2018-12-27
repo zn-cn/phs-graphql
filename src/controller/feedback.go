@@ -10,22 +10,20 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
-var (
-	createFeedbackArgs = graphql.FieldConfigArgument{
-		"content": &graphql.ArgumentConfig{
-			Description: "内容",
-			Type:        graphql.String,
-		},
-		"imgs": &graphql.ArgumentConfig{
-			Type:        graphql.NewList(imgType),
-			Description: "图片",
-		},
-		"contactWay": &graphql.ArgumentConfig{
-			Type:        graphql.String,
-			Description: "联系方式",
-		},
-	}
-)
+var createFeedbackArgs = graphql.FieldConfigArgument{
+	"content": &graphql.ArgumentConfig{
+		Description: "内容",
+		Type:        graphql.String,
+	},
+	"imgs": &graphql.ArgumentConfig{
+		Type:        graphql.NewList(imgType),
+		Description: "图片",
+	},
+	"contactWay": &graphql.ArgumentConfig{
+		Type:        graphql.String,
+		Description: "联系方式",
+	},
+}
 
 func createFeedback(p graphql.ResolveParams) (interface{}, error) {
 	feedback := model.Feedback{}

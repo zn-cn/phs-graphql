@@ -93,6 +93,16 @@ func setRedisUserWeekNotice(notices []Notice) error {
 	return nil
 }
 
+func GetNotice(id string) (Notice, error) {
+	if !bson.IsObjectIdHex(id) {
+		return Notice{}, constant.ErrorIDFormatWrong
+	}
+	query := bson.M{
+		"_id": bson.ObjectIdHex(id),
+	}
+	return findNotice(query, DefaultSelector)
+}
+
 func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 	query := bson.M{
 		"group_id": bson.M{
@@ -290,10 +300,6 @@ func UpdateExpireNotice() error {
 	}
 	_, err := updateNotices(query, update)
 	return err
-}
-
-func writeNoticeLog(funcName, errMsg string, err error) {
-	writeLog("notice.go", funcName, errMsg, err)
 }
 
 /****************************************** notice basic action ****************************************/

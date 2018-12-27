@@ -1,7 +1,4 @@
-/*
-Package log get the common logger
-*/
-package log
+package util
 
 import (
 	"config"

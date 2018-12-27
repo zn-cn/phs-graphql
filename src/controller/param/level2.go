@@ -8,10 +8,10 @@ type TypeGroupIDUserIDs struct {
 	UserIDsParam
 }
 
-type TypePageID struct {
+type TypePageCode struct {
 	TypeParam
 	PageParam
-	IDParam
+	CodeParam
 }
 
 type CodeID struct {

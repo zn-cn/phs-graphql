@@ -125,6 +125,13 @@ func CreateUserByUnionid(unionid string) error {
 	return nil
 }
 
+func GetUserByUnionid(unionid string) (User, error) {
+	query := bson.M{
+		"unionid": unionid,
+	}
+	return findUser(query, DefaultSelector)
+}
+
 func GetUserStatus(unionid string) (int, error) {
 	query := bson.M{
 		"unionid": unionid,
@@ -228,6 +235,15 @@ func insertUsers(docs ...interface{}) error {
 }
 
 /****************************************** user redis action ****************************************/
+
+func GetRedisUserInfo(unionid string) (map[string]string, error) {
+	ids := []string{unionid}
+	userInfos, err := GetRedisUserInfos(ids)
+	if len(userInfos) > 0 {
+		return userInfos[0], err
+	}
+	return nil, err
+}
 
 func GetRedisUserInfos(unionids []string) ([]map[string]string, error) {
 	redisConn := db.NewRedisDBCntlr()

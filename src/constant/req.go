@@ -11,7 +11,7 @@ const (
 
 const (
 	ReqNoticeGetAllType = iota + 1
-	ReqNoticeGetByGroupIDType
+	ReqNoticeGetByGroupCodeType
 )
 
 const (

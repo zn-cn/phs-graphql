@@ -55,7 +55,6 @@ const (
 
 	/****************************************** other ****************************************/
 
-	// api prefix
 	APIPrefix = "/api/v1"
 
 	EmailFeedbackNotice = "联系方式：%s <br /> 反馈内容：%s <br />"

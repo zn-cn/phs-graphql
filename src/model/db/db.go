@@ -8,7 +8,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 )
 
-// mgo controller
+// MgoDBCntlr mgo controller
 type MgoDBCntlr struct {
 	sess *mgo.Session
 	db   *mgo.Database

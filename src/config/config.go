@@ -9,7 +9,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-// Config 配置
 type Config struct {
 	AppInfo   appInfo   `json:"AppInfo"`
 	Log       logConf   `json:"Log"`
