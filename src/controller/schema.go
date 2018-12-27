@@ -16,6 +16,11 @@ var (
 	query = graphql.NewObject(graphql.ObjectConfig{
 		Name: "query",
 		Fields: graphql.Fields{
+			"health": &graphql.Field{
+				Type:        graphql.String,
+				Description: "判断健康情况",
+				Resolve:     getHealth,
+			},
 			"qiniuToken": &graphql.Field{
 				Args:        qiniuTokenArgs,
 				Type:        qiniuTokenType,
@@ -58,6 +63,11 @@ var (
 	mutation = graphql.NewObject(graphql.ObjectConfig{
 		Name: "mutation",
 		Fields: graphql.Fields{
+			"health": &graphql.Field{
+				Type:        graphql.String,
+				Description: "判断健康情况",
+				Resolve:     getHealth,
+			},
 			"createFeedback": &graphql.Field{
 				Args:        createFeedbackArgs,
 				Type:        graphql.Boolean,

@@ -22,10 +22,10 @@ type Group struct {
 
 	AvatarURL  string   `bson:"avatarUrl" json:"avatarUrl"`   // 群头像
 	Nickname   string   `bson:"nickname" json:"nickname"`     // 圈子昵称
-	OwnerID    string   `bson:"ownerID" json:"ownerID"`       // unionid 注：以下三种身份不会重复，如：members中不会有owner
+	OwnerID    string   `bson:"ownerID" json:"ownerID"`       // unionid 注：以下三种身份不会重复，如：memberIDs中不会有owner
 	CreateTime int64    `bson:"createTime" json:"createTime"` // 创建时间
-	Managers   []string `bson:"managers" json:"managers"`     // 管理员
-	Members    []string `bson:"members" json:"members"`       // 成员
+	ManagerIDs []string `bson:"managerIDs" json:"managerIDs"` // 管理员
+	MemberIDs  []string `bson:"memberIDs" json:"memberIDs"`   // 成员
 	PersonNum  int      `bson:"personNum" json:"personNum"`   // 总人数：1 + 管理员人数 + 成员人数
 }
 
@@ -100,7 +100,7 @@ func groupAction(code, unionid string, isJoin bool) error {
 		"ownerID": bson.M{
 			"$ne": unionid,
 		},
-		"managers": bson.M{
+		"managerIDs": bson.M{
 			"$nin": []string{unionid},
 		},
 	}
@@ -113,7 +113,7 @@ func groupAction(code, unionid string, isJoin bool) error {
 	if isJoin {
 		update = bson.M{
 			"$addToSet": bson.M{
-				"members": unionid,
+				"memberIDs": unionid,
 			},
 			"$inc": bson.M{
 				"personNum": 1,
@@ -122,7 +122,7 @@ func groupAction(code, unionid string, isJoin bool) error {
 	} else {
 		update = bson.M{
 			"$pull": bson.M{
-				"members": unionid,
+				"memberIDs": unionid,
 			},
 			"$inc": bson.M{
 				"personNum": -1,
@@ -174,17 +174,17 @@ func UpdateGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"managers": toUserIDs[0],
+		"managerIDs": toUserIDs[0],
 	}
 	update := bson.M{
 		"$set": bson.M{
 			"ownerID": toUserIDs[0],
 		},
 		"$pull": bson.M{
-			"managers": toUserIDs[0],
+			"managerIDs": toUserIDs[0],
 		},
 		"$addToSet": bson.M{
-			"members": ownerID,
+			"memberIDs": ownerID,
 		},
 	}
 
@@ -239,9 +239,9 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 
 	group := Group{}
 	selector := bson.M{
-		"ownerID":  1,
-		"managers": 1,
-		"members":  1,
+		"ownerID":    1,
+		"managerIDs": 1,
+		"memberIDs":  1,
 	}
 	err := groupTable.FindId(bson.ObjectIdHex(groupID)).Select(selector).One(&group)
 	if err != nil {
@@ -273,7 +273,7 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 
 	query = bson.M{
 		"unionid": bson.M{
-			"$in": group.Managers,
+			"$in": group.ManagerIDs,
 		},
 	}
 	update = bson.M{
@@ -285,7 +285,7 @@ func DelGroupOwner(groupID, ownerID string, toUserIDs []string) error {
 
 	query = bson.M{
 		"unionid": bson.M{
-			"$in": group.Members,
+			"$in": group.MemberIDs,
 		},
 	}
 	update = bson.M{
@@ -313,18 +313,18 @@ func SetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"members": bson.M{
+		"memberIDs": bson.M{
 			"$all": toUserIDs,
 		},
 	}
 	update := bson.M{
 		"$addToSet": bson.M{
-			"managers": bson.M{
+			"managerIDs": bson.M{
 				"$each": toUserIDs,
 			},
 		},
 		"$pullAll": bson.M{
-			"members": toUserIDs,
+			"memberIDs": toUserIDs,
 		},
 	}
 
@@ -376,16 +376,16 @@ func UnSetGroupManager(groupID, ownerID string, toUserIDs []string) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"managers": bson.M{
+		"managerIDs": bson.M{
 			"$all": toUserIDs,
 		},
 	}
 	update := bson.M{
 		"$pullAll": bson.M{
-			"managers": toUserIDs,
+			"managerIDs": toUserIDs,
 		},
 		"$addToSet": bson.M{
-			"members": bson.M{
+			"memberIDs": bson.M{
 				"$each": toUserIDs,
 			},
 		},
@@ -430,13 +430,13 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"managers": bson.M{
+		"managerIDs": bson.M{
 			"$all": toUserIDs,
 		},
 	}
 	update := bson.M{
 		"$pullAll": bson.M{
-			"managers": toUserIDs,
+			"managerIDs": toUserIDs,
 		},
 		"$inc": bson.M{
 			"personNum": -len(toUserIDs),
@@ -483,16 +483,16 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 				"ownerID": userID,
 			},
 			bson.M{
-				"managers": userID,
+				"managerIDs": userID,
 			},
 		},
-		"members": bson.M{
+		"memberIDs": bson.M{
 			"$all": toUserIDs,
 		},
 	}
 	update := bson.M{
 		"$pullAll": bson.M{
-			"members": toUserIDs,
+			"memberIDs": toUserIDs,
 		},
 		"$inc": bson.M{
 			"personNum": -len(toUserIDs),

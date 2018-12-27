@@ -17,7 +17,7 @@ var idArgs = graphql.FieldConfigArgument{
 }
 
 var getNoticesEnumType = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "updateGroupMembersEnumTypeEnum",
+	Name:        "getNoticesEnum",
 	Description: "更新类型",
 	Values: graphql.EnumValueConfigMap{
 		"Update": &graphql.EnumValueConfig{
@@ -117,17 +117,9 @@ var noticeType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.Int,
 			Description: "提醒时间毫秒时间戳",
 		},
-		"watchUsers": &graphql.Field{
-			Type:        graphql.NewList(graphql.String),
-			Description: "查看用户",
-		},
 		"watchNum": &graphql.Field{
 			Type:        graphql.Int,
 			Description: "查看人数",
-		},
-		"likeUsers": &graphql.Field{
-			Type:        graphql.NewList(graphql.String),
-			Description: "点赞用户",
 		},
 		"likeNum": &graphql.Field{
 			Type:        graphql.Int,
@@ -191,7 +183,7 @@ func getNotices(p graphql.ResolveParams) (interface{}, error) {
 }
 
 var updateNoticeEnumType = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "updateGroupMembersEnumTypeEnum",
+	Name:        "updateNoticeEnum",
 	Description: "更新类型",
 	Values: graphql.EnumValueConfigMap{
 		"Update": &graphql.EnumValueConfig{
@@ -225,33 +217,44 @@ var updateNoticeEnumType = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
-var noticesArgs = graphql.FieldConfigArgument{
-	"notices": &graphql.ArgumentConfig{
-		Description: "提醒",
-		Type:        graphql.NewList(noticeType),
+var noticeArgsType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name:        "noticeArgs",
+	Description: "noticeArgs",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"id": &graphql.InputObjectFieldConfig{
+			Type:        graphql.ID,
+			Description: "id",
+		},
+		"type": &graphql.InputObjectFieldConfig{
+			Description: "更新类型",
+			Type:        graphql.NewNonNull(updateNoticeEnumType),
+		},
+		"groupID": &graphql.InputObjectFieldConfig{
+			Description: "群组id",
+			Type:        graphql.String,
+		},
+		"title": &graphql.InputObjectFieldConfig{
+			Description: "作业标题",
+			Type:        graphql.String,
+		},
+		"content": &graphql.InputObjectFieldConfig{
+			Description: "作业文字内容",
+			Type:        graphql.String,
+		},
+		"imgs": &graphql.InputObjectFieldConfig{
+			Description: "图片",
+			Type:        graphql.NewList(imgArgsType),
+		},
+		"note": &graphql.InputObjectFieldConfig{
+			Description: "注释",
+			Type:        graphql.String,
+		},
+		"noticeTime": &graphql.InputObjectFieldConfig{
+			Type:        graphql.Int,
+			Description: "提醒时间毫秒时间戳",
+		},
 	},
-}
-
-func createNotices(p graphql.ResolveParams) (interface{}, error) {
-	data := param.NoticesParam{}
-	err := util.MapToJSONStruct(p.Args, &data)
-	if err != nil {
-		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, err)
-		return false, err
-	}
-	if len(data.Notices) == 0 {
-		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, constant.ErrorEmpty)
-		return false, err
-	}
-
-	userID := getJWTUserID(p)
-	err = model.CreateNotices(userID, data.Notices)
-	if err != nil {
-		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, err)
-		return false, err
-	}
-	return true, nil
-}
+})
 
 var noticeArgs = graphql.FieldConfigArgument{
 	"id": &graphql.ArgumentConfig{
@@ -276,7 +279,7 @@ var noticeArgs = graphql.FieldConfigArgument{
 	},
 	"imgs": &graphql.ArgumentConfig{
 		Description: "图片",
-		Type:        graphql.NewList(imgType),
+		Type:        graphql.NewList(imgArgsType),
 	},
 	"note": &graphql.ArgumentConfig{
 		Description: "注释",
@@ -350,7 +353,7 @@ func updateNotice(p graphql.ResolveParams) (interface{}, error) {
 		return false, err
 	}
 
-	userID := ""
+	userID := getJWTUserID(p)
 	err = model.UpdateNotice(data.ID.Hex(), userID, updateData)
 	if err != nil {
 		writeNoticeLog("updateNotice", "更新通知失败", err)
@@ -358,6 +361,34 @@ func updateNotice(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// TODO 提醒时间和组变了，更新redis
+	return true, nil
+}
+
+var noticesArgs = graphql.FieldConfigArgument{
+	"notices": &graphql.ArgumentConfig{
+		Description: "提醒",
+		Type:        graphql.NewList(noticeArgsType),
+	},
+}
+
+func createNotices(p graphql.ResolveParams) (interface{}, error) {
+	data := param.NoticesParam{}
+	err := util.MapToJSONStruct(p.Args, &data)
+	if err != nil {
+		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, err)
+		return false, err
+	}
+	if len(data.Notices) == 0 {
+		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, constant.ErrorEmpty)
+		return false, err
+	}
+
+	userID := getJWTUserID(p)
+	err = model.CreateNotices(userID, data.Notices)
+	if err != nil {
+		writeNoticeLog("CreateNotices", constant.ErrorMsgParamWrong, err)
+		return false, err
+	}
 	return true, nil
 }
 

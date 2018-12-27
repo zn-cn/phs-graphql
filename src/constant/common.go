@@ -2,6 +2,8 @@ package constant
 
 import "time"
 
+type ContextKey string
+
 const (
 	TemplateIDSendNotice      = "srUKofBihJvr6X5zJD8ajPmxOXC80YUmn2_Oco9YTp8"
 	TemplateNoticeFirst       = "别忘了，作业写了吗！"
@@ -48,10 +50,10 @@ const (
 
 	/****************************************** token ****************************************/
 
-	TokenQiniuExpire = 7200
-	JWTContextKey    = "user"
-	JWTAuthScheme    = "Bearer"
-	JWTExpire        = time.Hour * 24 * 7
+	TokenQiniuExpire            = 7200
+	JWTContextKey    ContextKey = "user"
+	JWTAuthScheme               = "Bearer"
+	JWTExpire                   = time.Hour * 24 * 7
 
 	/****************************************** other ****************************************/
 

@@ -95,7 +95,7 @@ func init() {
 		Description: "创建/拥有的群组",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if user, ok := p.Source.(model.User); ok == true {
-				return model.GetRedisGroupInfos(user.OwnGroups)
+				return model.GetRedisGroupInfos(user.OwnGroupIDs)
 			}
 			return nil, constant.ErrorEmpty
 		},
@@ -105,7 +105,7 @@ func init() {
 		Description: "管理的群组",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if user, ok := p.Source.(model.User); ok == true {
-				return model.GetRedisGroupInfos(user.ManageGroups)
+				return model.GetRedisGroupInfos(user.ManageGroupIDs)
 			}
 			return nil, constant.ErrorEmpty
 		},
@@ -115,7 +115,7 @@ func init() {
 		Description: "加入的群组",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if user, ok := p.Source.(model.User); ok == true {
-				return model.GetRedisGroupInfos(user.JoinGroups)
+				return model.GetRedisGroupInfos(user.JoinGroupIDs)
 			}
 			return nil, constant.ErrorEmpty
 		},

@@ -8,8 +8,8 @@ import (
 )
 
 var templateType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "Template",
-	Description: "Template",
+	Name:        "template",
+	Description: "模板",
 	Fields: graphql.Fields{
 		"id": &graphql.Field{
 			Type:        graphql.ID,

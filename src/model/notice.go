@@ -10,9 +10,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-/*
-   通知
-*/
 type Notice struct {
 	ID     bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
 	Type   int           `bson:"type" json:"type"`     // 类型：1表示前一天发送通知，2表示前两天发送通知
@@ -28,10 +25,10 @@ type Notice struct {
 	CreateTime int64  `bson:"createTime" json:"createTime"` // 创建时间
 	NoticeTime int64  `bson:"noticeTime" json:"noticeTime"` // 提醒时间
 
-	WatchUsers []string `bson:"watchUsers" json:"watchUsers"` // 查看用户
-	WatchNum   int      `bson:"watchNum" json:"watchNum"`     // 查看人数
-	LikeUsers  []string `bson:"likeUsers" json:"likeUsers"`   // 点赞用户
-	LikeNum    int      `bson:"likeNum" json:"likeNum"`       // 点赞人数
+	WatchUserIDs []string `bson:"watchUserIDs" json:"watchUserIDs"` // 查看用户
+	WatchNum     int      `bson:"watchNum" json:"watchNum"`         // 查看人数
+	LikeUserIDs  []string `bson:"likeUserIDs" json:"likeUserIDs"`   // 点赞用户
+	LikeNum      int      `bson:"likeNum" json:"likeNum"`           // 点赞人数
 }
 
 func CreateNotices(userID string, notices []Notice) error {
@@ -64,9 +61,9 @@ func setRedisUserWeekNotice(notices []Notice) error {
 	defer redisCntrl.Close()
 
 	selector := bson.M{
-		"ownerID":  1,
-		"managers": 1,
-		"members":  1,
+		"ownerID":    1,
+		"managerIDs": 1,
+		"memberIDs":  1,
 	}
 
 	for _, notice := range notices {
@@ -76,7 +73,7 @@ func setRedisUserWeekNotice(notices []Notice) error {
 			break
 		}
 
-		members := append(append([]string{group.OwnerID}, group.Managers...), group.Members...)
+		memberIDs := append(append([]string{group.OwnerID}, group.ManagerIDs...), group.MemberIDs...)
 
 		t := time.Unix(notice.NoticeTime/1000, 0)
 		now := util.GetNowTimestamp()
@@ -84,7 +81,7 @@ func setRedisUserWeekNotice(notices []Notice) error {
 		weekEnd := util.GetWeekEndTimestamp(t)
 		expire := (weekEnd - now) / 1000
 
-		for _, member := range members {
+		for _, member := range memberIDs {
 			key := fmt.Sprintf(constant.RedisUserWeekNotice, weekStart, member)
 			redisCntrl.RPUSH(key, notice.ID.Hex())
 			redisCntrl.EXPIRE(key, expire)
@@ -113,8 +110,8 @@ func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 		},
 	}
 	selector := bson.M{
-		"watchUsers": 0,
-		"likeUsers":  0,
+		"watchUserIDs": 0,
+		"likeUserIDs":  0,
 	}
 	fields := []string{
 		"-status",
@@ -175,10 +172,10 @@ func SendDayNotice() error {
 	}
 
 	selector := bson.M{
-		"watchUsers": 0,
-		"watchNum":   0,
-		"likeUsers":  0,
-		"likeNum":    0,
+		"watchUserIDs": 0,
+		"watchNum":     0,
+		"likeUserIDs":  0,
+		"likeNum":      0,
 	}
 	notices := []Notice{}
 	noticeTable.Find(query).Select(selector).All(&notices)
@@ -192,9 +189,9 @@ func SendDayNotice() error {
 	templates := []WechatTemplate{}
 	for _, notice := range notices {
 		selector = bson.M{
-			"ownerID":  1,
-			"managers": 1,
-			"members":  1,
+			"ownerID":    1,
+			"managerIDs": 1,
+			"memberIDs":  1,
 		}
 		group := Group{}
 		err := groupTable.FindId(bson.ObjectIdHex(notice.GroupID)).Select(selector).One(&group)
@@ -202,10 +199,10 @@ func SendDayNotice() error {
 			break
 		}
 
-		members := append(append([]string{group.OwnerID}, group.Managers...), group.Members...)
+		memberIDs := append(append([]string{group.OwnerID}, group.ManagerIDs...), group.MemberIDs...)
 		query = bson.M{
 			"unionid": bson.M{
-				"$in": members,
+				"$in": memberIDs,
 			},
 			"status": bson.M{
 				"$gte": constant.UserFollowStatus,

@@ -16,7 +16,7 @@ var createFeedbackArgs = graphql.FieldConfigArgument{
 		Type:        graphql.String,
 	},
 	"imgs": &graphql.ArgumentConfig{
-		Type:        graphql.NewList(imgType),
+		Type:        graphql.NewList(imgArgsType),
 		Description: "图片",
 	},
 	"contactWay": &graphql.ArgumentConfig{

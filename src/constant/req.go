@@ -30,6 +30,12 @@ const (
 	ImgTypeFeedback
 )
 
+const (
+	GroupUserStatusOwner = iota + 1
+	GroupUserStatusManager
+	GroupUserStatusMember
+)
+
 var (
 	ImgPrefix = map[int]string{
 		ImgTypeHomework: ImgPrefixHomework,

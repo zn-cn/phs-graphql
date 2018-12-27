@@ -28,9 +28,9 @@ type User struct {
 	AvatarURL string `bson:"avatarUrl" json:"avatarUrl"` // 用户头像
 	Language  string `bson:"language" json:"language"`   // 语言
 
-	OwnGroups    []string `bson:"ownGroups" json:"ownGroups"`
-	ManageGroups []string `bson:"manageGroups" json:"manageGroups"`
-	JoinGroups   []string `bson:"joinGroups" json:"joinGroups"`
+	OwnGroupIDs    []string `bson:"ownGroupIDs" json:"ownGroupIDs"`
+	ManageGroupIDs []string `bson:"manageGroupIDs" json:"manageGroupIDs"`
+	JoinGroupIDs   []string `bson:"joinGroupIDs" json:"joinGroupIDs"`
 }
 
 func CreateUser(userInfo *util.DecryptUserInfo) error {
@@ -164,7 +164,7 @@ func SetUserFollowStatus(unionid string, isFollow bool) error {
 	return updateUser(query, update)
 }
 
-func FindGroupsByUserID(unionid string) (ownGroups, manageGroups, joinGroups []string, err error) {
+func FindGroupsByUserID(unionid string) (ownGroupIDs, manageGroupIDs, joinGroupIDs []string, err error) {
 	if unionid == "" {
 		err = constant.ErrorIDFormatWrong
 		return
@@ -174,13 +174,13 @@ func FindGroupsByUserID(unionid string) (ownGroups, manageGroups, joinGroups []s
 		"unionid": unionid,
 	}
 	selector := bson.M{
-		"ownGroups":    1,
-		"manageGroups": 1,
-		"joinGroups":   1,
+		"ownGroupIDs":    1,
+		"manageGroupIDs": 1,
+		"joinGroupIDs":   1,
 	}
 
 	user, err := findUser(query, selector)
-	ownGroups, manageGroups, joinGroups = user.OwnGroups, user.ManageGroups, user.JoinGroups
+	ownGroupIDs, manageGroupIDs, joinGroupIDs = user.OwnGroupIDs, user.ManageGroupIDs, user.JoinGroupIDs
 	return
 }
 
@@ -209,7 +209,7 @@ func AddUserOwnGroup(unionid, id string) error {
 	}
 	update := bson.M{
 		"$addToSet": bson.M{
-			"ownGroups": id,
+			"ownGroupIDs": id,
 		},
 	}
 	return table.Update(query, update)

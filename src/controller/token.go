@@ -48,18 +48,27 @@ var imgType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "img",
 	Fields: graphql.Fields{
 		"url": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.String),
+			Type:        graphql.String,
 			Description: "url",
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return nil, nil
-			},
 		},
 		"microUrl": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.String),
+			Type:        graphql.String,
 			Description: "microUrl",
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return nil, nil
-			},
+		},
+	},
+})
+
+var imgArgsType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name:        "imgArgs",
+	Description: "imgArgs",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"url": &graphql.InputObjectFieldConfig{
+			Type:        graphql.String,
+			Description: "url",
+		},
+		"microUrl": &graphql.InputObjectFieldConfig{
+			Type:        graphql.String,
+			Description: "microUrl",
 		},
 	},
 })

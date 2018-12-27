@@ -32,9 +32,28 @@ var groupStatusEnumType = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
+var groupUserStatusEnumType = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "groupStatusEnum",
+	Description: "圈子状态",
+	Values: graphql.EnumValueConfigMap{
+		"owner": &graphql.EnumValueConfig{
+			Value:       constant.GroupUserStatusOwner,
+			Description: "创建者状态",
+		},
+		"manager": &graphql.EnumValueConfig{
+			Value:       constant.GroupUserStatusManager,
+			Description: "管理员状态",
+		},
+		"member": &graphql.EnumValueConfig{
+			Value:       constant.GroupUserStatusMember,
+			Description: "成员状态",
+		},
+	},
+})
+
 var ticketType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "group",
-	Description: "group",
+	Name:        "ticket",
+	Description: "二维码",
 	Fields: graphql.Fields{
 		"ticketUrl": &graphql.Field{
 			Type:        graphql.String,
@@ -59,6 +78,11 @@ var groupType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        groupStatusEnumType,
 			Description: "状态",
 		},
+		"userStatus": &graphql.Field{
+			Type:        groupUserStatusEnumType,
+			Description: "用户的状态",
+			Resolve:     getGroupUserStatus,
+		},
 		"code": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "圈子code -> 邀请码, unique",
@@ -75,10 +99,6 @@ var groupType = graphql.NewObject(graphql.ObjectConfig{
 		"avatarUrl": &graphql.Field{
 			Type:        graphql.String,
 			Description: "用户头像",
-		},
-		"ownerID": &graphql.Field{
-			Type:        graphql.String,
-			Description: "unionid 注：以下三种身份不会重复，如：members中不会有owner",
 		},
 		"createTime": &graphql.Field{
 			Type:        graphql.Int,
@@ -108,7 +128,7 @@ func init() {
 		Description: "管理员",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if group, ok := p.Source.(model.Group); ok == true {
-				return model.GetRedisUserInfos(group.Managers)
+				return model.GetRedisUserInfos(group.ManagerIDs)
 			}
 			writeGroupLog("managers", "获取群组管理员信息失败", nil)
 			return nil, constant.ErrorEmpty
@@ -119,7 +139,7 @@ func init() {
 		Description: "成员",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if group, ok := p.Source.(model.Group); ok == true {
-				return model.GetRedisUserInfos(group.Members)
+				return model.GetRedisUserInfos(group.MemberIDs)
 			}
 			writeGroupLog("managers", "获取群组成员信息失败", nil)
 			return nil, constant.ErrorEmpty
@@ -142,6 +162,28 @@ func getGroupQrcode(p graphql.ResolveParams) (interface{}, error) {
 		"ticketUrl": fmt.Sprintf(constant.URLQrcodeTicket, res.Ticket),
 	}
 	return resData, nil
+}
+
+func getGroupUserStatus(p graphql.ResolveParams) (interface{}, error) {
+	if group, ok := p.Source.(model.Group); ok == true {
+		status := 0
+		userID := getJWTUserID(p)
+		if userID == group.OwnerID {
+			status = 1
+		} else {
+			for _, id := range group.ManagerIDs {
+				if id == userID {
+					status = 2
+					break
+				}
+			}
+			if status == 0 {
+				status = 3
+			}
+		}
+		return status, nil
+	}
+	return nil, constant.ErrorEmpty
 }
 
 func getGroupByCode(p graphql.ResolveParams) (interface{}, error) {
@@ -214,7 +256,7 @@ func leaveGroup(p graphql.ResolveParams) (interface{}, error) {
 }
 
 var updateGroupMembersEnumType = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "updateGroupMembersEnumTypeEnum",
+	Name:        "updateGroupMembersEnum",
 	Description: "更新类型",
 	Values: graphql.EnumValueConfigMap{
 		"UpdateOwner": &graphql.EnumValueConfig{

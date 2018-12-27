@@ -18,7 +18,7 @@ func GetJWTToken(data map[string]interface{}, secret string, expire time.Duratio
 }
 
 func ValidateJWT(authScheme, token, secret string) (jwt.MapClaims, bool) {
-	if authScheme != token[:len(authScheme)] {
+	if len(token) < len(authScheme)+1 || authScheme != token[:len(authScheme)] {
 		return nil, false
 	}
 	t, _ := jwt.Parse(token[len(authScheme)+1:], func(jwtToken *jwt.Token) (interface{}, error) {

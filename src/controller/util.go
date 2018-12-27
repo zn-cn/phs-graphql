@@ -17,6 +17,10 @@ type Error struct {
 	ErrCode int    `json:"err_code"`
 }
 
+func getHealth(p graphql.ResolveParams) (interface{}, error) {
+	return "hello world", nil
+}
+
 func getJWTUserID(p graphql.ResolveParams) string {
 	return p.Context.Value(constant.JWTContextKey).(jwt.MapClaims)["userID"].(string)
 }
