@@ -40,6 +40,12 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "id",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if user, ok := p.Source.(model.User); ok == true {
+					return user.ID.Hex(), nil
+				}
+				return nil, constant.ErrorEmpty
+			},
 		},
 		"status": &graphql.Field{
 			Type:        userStatusEnumType,

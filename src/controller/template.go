@@ -14,6 +14,12 @@ var templateType = graphql.NewObject(graphql.ObjectConfig{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "id",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if template, ok := p.Source.(model.Template); ok == true {
+					return template.ID.Hex(), nil
+				}
+				return nil, constant.ErrorEmpty
+			},
 		},
 		"type": &graphql.Field{
 			Type:        graphql.Int,

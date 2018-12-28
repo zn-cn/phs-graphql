@@ -76,6 +76,12 @@ var noticeType = graphql.NewObject(graphql.ObjectConfig{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "id",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if notice, ok := p.Source.(model.Notice); ok == true {
+					return notice.ID.Hex(), nil
+				}
+				return nil, constant.ErrorEmpty
+			},
 		},
 		"type": &graphql.Field{
 			Type:        graphql.Int,

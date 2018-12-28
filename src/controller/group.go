@@ -73,6 +73,12 @@ var groupType = graphql.NewObject(graphql.ObjectConfig{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "id",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if group, ok := p.Source.(model.Group); ok == true {
+					return group.ID.Hex(), nil
+				}
+				return nil, constant.ErrorEmpty
+			},
 		},
 		"status": &graphql.Field{
 			Type:        groupStatusEnumType,

@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "phs": {
+      "schemaPath": "schema.graphql",
+      "extensions": {
+        "endpoints": {
+          "local": "http://127.0.0.1:6551/api/graphql"
+        }
+      }
+    }
+  }
+}

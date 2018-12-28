@@ -133,9 +133,9 @@ func init() {
 
 	handler = gh.New(&gh.Config{
 		Schema: &schema,
-		// GraphiQL: isProd,
-		Pretty:     isProd,
-		Playground: isProd,
+		// GraphiQL: !isProd,
+		Pretty:     !isProd,
+		Playground: !isProd,
 	})
 }
 
