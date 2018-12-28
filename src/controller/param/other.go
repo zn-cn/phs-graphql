@@ -1,6 +1,9 @@
 package param
 
-import "model"
+import (
+	"model"
+	"util"
+)
 
 /*---------------------------------- 其他 ---------------------------------------*/
 type WeixinLoginData struct {
@@ -24,4 +27,9 @@ type userInfo struct {
 
 type NoticesParam struct {
 	Notices []model.Notice `json:"notices"`
+}
+
+type CodeUserInfo struct {
+	CodeParam
+	*util.DecryptUserInfo
 }

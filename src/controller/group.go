@@ -320,6 +320,7 @@ func updateGroupMembers(p graphql.ResolveParams) (interface{}, error) {
 	if f, ok := update[data.Type]; ok {
 		userID := getJWTUserID(p)
 		err = f(data.GroupID, userID, data.UserIDs)
+
 	} else {
 		err = constant.ErrorParamWrong
 	}

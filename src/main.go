@@ -18,6 +18,7 @@ func startWeb() {
 	// REST 部分：用于认证和未开放的API
 	http.HandleFunc("/api/v1/login", controller.Login)
 	http.HandleFunc("/api/unopen/group/action/join", controller.JoinGroupFromOfficialAccounts)
+	http.HandleFunc("/api/unopen/group", controller.GetGroupInfo)
 
 	// Graphql 部分：后台主体部分
 	http.HandleFunc("/api/graphql", controller.Graphql)

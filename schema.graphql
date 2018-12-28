@@ -1,0 +1,365 @@
+schema {
+  query: query
+  mutation: mutation
+}
+
+# 更新类型
+enum getNoticesEnum {
+  # 获取全部
+  Update @deprecated
+  # 按照圈子获取提醒
+  UpdateContent @deprecated
+}
+
+# group
+type group {
+  # 用户头像
+  avatarUrl: String @deprecated
+  # 圈子code -> 邀请码, unique
+  code: ID @deprecated
+  # 创建时间毫秒时间戳
+  createTime: Int @deprecated
+  # id
+  id: ID @deprecated
+  # 管理员
+  managers: [user] @deprecated
+  # 成员
+  members: [user] @deprecated
+  # 昵称
+  nickname: String @deprecated
+  # 创建者信息
+  owner: user @deprecated
+  # unionid 注：以下三种身份不会重复，如：members中不会有owner
+  ownerID: String @deprecated
+  # 总人数：1 + 管理员人数 + 成员人数
+  personNum: Int @deprecated
+  # 状态
+  status: groupStatusEnum @deprecated
+  # 二维码
+  ticket: ticket @deprecated
+}
+
+# 圈子状态
+enum groupStatusEnum {
+  # 正常状态
+  common @deprecated
+  # 解散状态
+  delete @deprecated
+}
+
+# img
+type img {
+  # microUrl
+  microUrl: String @deprecated
+  # url
+  url: String @deprecated
+}
+
+# imgArgs
+input imgArgs {
+  # url
+  url: String
+  # microUrl
+  microUrl: String
+}
+
+type mutation {
+  # 创建反馈
+  createFeedback(
+    # 内容
+    content: String
+    # 图片
+    imgs: [imgArgs]
+    # 联系方式
+    contactWay: String
+  ): Boolean @deprecated
+  # 创建群组
+  createGroup(
+    # 昵称
+    nickname: String!
+    # 圈子头像
+    avatarUrl: String = "http://<image hostname>/mp/head/logo1_%E6%96%B9.png"
+  ): group @deprecated
+  # 创建提醒
+  createNotices(
+    # 提醒
+    notices: [noticeArgs]
+  ): Boolean @deprecated
+  # 删除提醒
+  deleteNotice(
+    # id
+    id: ID
+  ): Boolean @deprecated
+  # 判断健康情况
+  health: String @deprecated
+  # 加入群组
+  joinGroup(
+    # 圈子code
+    code: String!
+  ): Boolean @deprecated
+  # 离开群组
+  leaveGroup(
+    # 圈子code
+    code: String!
+  ): Boolean @deprecated
+  # 更新群组成员, 按照权限限制: 创建者 > 管理员 > 成员, 如：管理员可以删除成员
+  updateGroupMembers(
+    #  用户unionid数组, type=1时 数组长度为1, type=2时 数组长度为0
+    userIDs: [String]
+    # 更新类型
+    type: updateGroupMembersEnum!
+    # 群组id
+    groupID: String
+  ): Boolean @deprecated
+  # 更新提醒
+  updateNotice(
+    # 提醒时间毫秒时间戳
+    noticeTime: Int
+    # id
+    id: ID
+    # 更新类型
+    type: updateNoticeEnum!
+    # 群组id
+    groupID: String
+    # 作业标题
+    title: String
+    # 作业文字内容
+    content: String
+    # 图片
+    imgs: [imgArgs]
+    # 注释
+    note: String
+  ): Boolean @deprecated
+}
+
+# 通知
+type notice {
+  # 内容
+  content: String @deprecated
+  # 创建时间毫秒时间戳
+  createTime: Int @deprecated
+  # 创建者 unionid
+  creatorID: ID @deprecated
+  # 群组 _id
+  groupID: ID @deprecated
+  # 群组信息
+  groupInfo: group @deprecated
+  # id
+  id: ID @deprecated
+  # 图片
+  imgs: [img] @deprecated
+  # 点赞人数
+  likeNum: Int @deprecated
+  # 点赞用户
+  likeUsers: [String] @deprecated
+  # 备注
+  note: String @deprecated
+  # 提醒时间毫秒时间戳
+  noticeTime: Int @deprecated
+  #  状态
+  status: noticeStatusEnum @deprecated
+  # 标题
+  title: String @deprecated
+  # 类型：1表示前一天发送通知，2表示前两天发送通知
+  type: Int @deprecated
+  # 查看人数
+  watchNum: Int @deprecated
+  # 查看用户
+  watchUsers: [String] @deprecated
+}
+
+# noticeArgs
+input noticeArgs {
+  # 作业文字内容
+  content: String
+  # 图片
+  imgs: [imgArgs]
+  # 注释
+  note: String
+  # 提醒时间毫秒时间戳
+  noticeTime: Int
+  # id
+  id: ID
+  # 更新类型
+  type: updateNoticeEnum!
+  # 群组id
+  groupID: String
+  # 作业标题
+  title: String
+}
+
+# 通知状态
+enum noticeStatusEnum {
+  # 删除状态
+  delete @deprecated
+  # 过期状态
+  expire @deprecated
+  # 发布状态
+  publish @deprecated
+}
+
+# qiniuToken
+type qiniuToken {
+  # img
+  img: img! @deprecated
+  # key
+  key: String! @deprecated
+  # uploadToken
+  uploadToken: String! @deprecated
+}
+
+# 七牛Token类型
+enum qiniuTokenTypeEnum {
+  # 作业图片
+  homework @deprecated
+  # 头像
+  head @deprecated
+  # 反馈图片
+  feedback @deprecated
+}
+
+type query {
+  # 获取圈子信息
+  group(
+    # 圈子code
+    code: String!
+  ): group @deprecated
+  # 判断健康情况
+  health: String @deprecated
+  # 获取通知信息
+  notice(
+    # id
+    id: ID
+  ): notice @deprecated
+  # 获取通知列表
+  notices(
+    # 圈子code
+    code: ID
+    # 页数, 从1开始
+    page: Int!
+    # 一页数量，限制范围: 1~20
+    perPage: Int!
+    # 类型
+    type: getNoticesEnum!
+  ): [notice] @deprecated
+  # 获取上传图片的七牛云upload-token 链接：https://developer.qiniu.com/kodo/manual/1208/upload-token
+  qiniuToken(
+    # 类型
+    type: qiniuTokenTypeEnum!
+    # 后缀，如：.jpg
+    suffix: String = ".jpg"
+  ): qiniuToken @deprecated
+  # 获取模板信息
+  template(
+    # id
+    id: ID
+  ): template @deprecated
+  # 获取用户信息
+  user(
+    # 用户id，即unionid
+    userID: ID
+  ): user @deprecated
+}
+
+# 模板
+type template {
+  # 创建时间毫秒时间戳
+  createTime: Int @deprecated
+  # 创建者 unionid
+  creatorID: ID @deprecated
+  # id
+  id: ID @deprecated
+  # 模板内容
+  notices: [String] @deprecated
+  # 状态
+  status: Int @deprecated
+  # 类型
+  type: Int @deprecated
+}
+
+# 二维码
+type ticket {
+  # 二维码图片链接
+  ticketUrl: String @deprecated
+  # 二维码图片解析后的地址，开发者可根据该地址自行生成需要的二维码图片
+  url: String @deprecated
+}
+
+# 更新类型
+enum updateGroupMembersEnum {
+  # 设置管理者
+  SetManager @deprecated
+  # 取消管理员权限
+  UnSetManager @deprecated
+  # 删除管理员
+  DelManager @deprecated
+  # 删除成员
+  DelMember @deprecated
+  # 更新拥有者(转让群组，且只能转给管理员)
+  UpdateOwner @deprecated
+  # 删除拥有者，即解散群组
+  DelOwner @deprecated
+}
+
+# 更新类型
+enum updateNoticeEnum {
+  # 更新noticeTime
+  UpdateNoticeTime @deprecated
+  # 更新groupID
+  UpdateGroupID @deprecated
+  # 大更新(空值自动过滤，更新不包含groupID)
+  Update @deprecated
+  # 更新content
+  UpdateContent @deprecated
+  # 更新imgs
+  UpdateImgs @deprecated
+  # 更新标题
+  UpdateTitle @deprecated
+  # 更新note
+  UpdateNote @deprecated
+}
+
+# user
+type user {
+  # 用户头像
+  avatarUrl: String @deprecated
+  # 城市
+  city: String @deprecated
+  # 国家
+  country: String @deprecated
+  # 性别 0：未知、1：男、2：女
+  gender: Int @deprecated
+  # id
+  id: ID @deprecated
+  # 是否关注了服务号
+  isFollow: Boolean @deprecated
+  # 加入的群组
+  joinGroups: [group] @deprecated
+  # 语言
+  language: String @deprecated
+  # 管理的群组
+  manageGroups: [group] @deprecated
+  # 昵称
+  nickname: String @deprecated
+  # openid
+  openid: ID @deprecated
+  # 创建/拥有的群组
+  ownGroups: [group] @deprecated
+  # 省份
+  province: String @deprecated
+  # 状态
+  status: userStatusEnum @deprecated
+  # unionid
+  unionid: ID @deprecated
+}
+
+# 用户状态
+enum userStatusEnum {
+  # 被删除
+  delete @deprecated
+  # 没有关注公众号
+  unFollow @deprecated
+  # 已经关注公众号的普通用户
+  follow @deprecated
+}
+

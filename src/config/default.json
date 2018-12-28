@@ -19,7 +19,7 @@
     "Port": "6379"
   },
   "Security": {
-    "Secret": "<secret>"
+    "Secret": "secret"
   },
   "EmailInfo": {
     "From": "<from email>",

@@ -154,7 +154,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
  * @apiUse JoinGroupFromOfficialAccounts
  */
 func JoinGroupFromOfficialAccounts(w http.ResponseWriter, r *http.Request) {
-	data := param.CodeID{}
+	data := param.CodeUserInfo{}
 	err := loadJSONData(r, &data)
 	if err != nil {
 		writeRestLog("JoinGroupFromOfficialAccounts", constant.ErrorMsgParamWrong, err)
@@ -162,14 +162,14 @@ func JoinGroupFromOfficialAccounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if data.ID == "" || data.Code == "" {
+	if data.UnionID == "" || data.Code == "" {
 		writeRestLog("JoinGroupFromOfficialAccounts", constant.ErrorMsgParamWrong, err)
 		resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
 		return
 	}
 
-	model.CreateUserByUnionid(data.ID)
-	err = model.JoinGroup(data.Code, data.ID)
+	model.CreateUser(data.DecryptUserInfo)
+	err = model.JoinGroup(data.Code, data.UnionID)
 	if err != nil {
 		writeRestLog("JoinGroupFromOfficialAccounts", "加入群组失败", err)
 		resJSONError(w, http.StatusBadGateway, "加入群组失败")
@@ -177,9 +177,25 @@ func JoinGroupFromOfficialAccounts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 发送模板消息
-	go model.SendGroupJoinTemplate(data.ID, data.Code)
+	go model.SendGroupJoinTemplate(data.UnionID, data.Code)
 
 	resJSONData(w, nil)
+}
+
+func GetGroupInfo(w http.ResponseWriter, r *http.Request) {
+	codes := r.URL.Query()["code"]
+	if len(codes) == 0 || codes[0] == "" {
+		writeRestLog("GetGroupInfo", constant.ErrorMsgParamWrong, constant.ErrorParamWrong)
+		resJSONError(w, http.StatusBadRequest, constant.ErrorMsgParamWrong)
+		return
+	}
+	code := codes[0]
+	group, _ := model.GetGroupByCode(code)
+	resData := map[string]interface{}{
+		"nickname":  group.Nickname,
+		"avatarUrl": group.AvatarURL,
+	}
+	resJSONData(w, resData)
 }
 
 func writeRestLog(funcName, errMsg string, err error) {

@@ -46,9 +46,9 @@ func CreateUser(userInfo *util.DecryptUserInfo) error {
 	}
 	user := User{}
 	selector := bson.M{
-		"unionid":   1,
-		"nickname":  1,
-		"avatarUrl": 1,
+		"unionid":    1,
+		"nickname":   1,
+		"avatar_url": 1,
 	}
 
 	cntrl := db.NewCloneMgoDBCntlr()
@@ -57,7 +57,7 @@ func CreateUser(userInfo *util.DecryptUserInfo) error {
 
 	err := table.Find(query).Select(selector).One(&user)
 	status := constant.UserFollowStatus
-	if ok, err := IsFollowOfficeAccount(userInfo.UnionID); !ok || err != nil {
+	if ok, _ := IsFollowOfficeAccount(userInfo.UnionID); !ok {
 		status = constant.UserUnFollowStatus
 	}
 	if err != nil {
@@ -79,48 +79,23 @@ func CreateUser(userInfo *util.DecryptUserInfo) error {
 
 	// update
 	if userInfo.NickName != user.Nickname || userInfo.AvatarURL != user.AvatarURL {
+		updateMap := map[string]interface{}{
+			"status":     status,
+			"nickname":   userInfo.NickName,
+			"avatar_url": userInfo.AvatarURL,
+			"gender":     userInfo.Gender,
+			"language":   userInfo.Language,
+			"country":    userInfo.Country,
+			"city":       userInfo.City,
+			"province":   userInfo.Province,
+		}
+		if userInfo.OpenID != "" {
+			updateMap["openid"] = userInfo.OpenID
+		}
 		update := bson.M{
-			"$set": bson.M{
-				"status":    status,
-				"openid":    userInfo.OpenID,
-				"nickname":  userInfo.NickName,
-				"avatarUrl": userInfo.AvatarURL,
-				"gender":    userInfo.Gender,
-				"language":  userInfo.Language,
-				"country":   userInfo.Country,
-				"city":      userInfo.City,
-				"province":  userInfo.Province,
-			},
+			"$set": updateMap,
 		}
 		return table.Update(query, update)
-	}
-	return nil
-}
-
-func CreateUserByUnionid(unionid string) error {
-	query := bson.M{
-		"unionid": unionid,
-	}
-
-	selector := bson.M{
-		"status": 1,
-	}
-	oldUser, err := findUser(query, selector)
-	if err != nil {
-		user := User{
-			ID:      bson.NewObjectId(),
-			Status:  constant.UserFollowStatus,
-			Unionid: unionid,
-		}
-		return insertUsers(user)
-	}
-	if oldUser.Status != constant.UserFollowStatus {
-		update := bson.M{
-			"$set": bson.M{
-				"status": constant.UserFollowStatus,
-			},
-		}
-		return updateUser(query, update)
 	}
 	return nil
 }
@@ -254,10 +229,7 @@ func GetRedisUserInfos(unionids []string) ([]map[string]string, error) {
 		key := fmt.Sprintf(constant.RedisUserInfo, unionid)
 		userInfo, err := redisConn.HGETALL(key)
 		if len(userInfo) == 0 || err != nil {
-			user, err := setRedisUserInfo(unionid)
-			if err != nil {
-				return nil, err
-			}
+			user, _ := setRedisUserInfo(unionid)
 			userInfo = map[string]string{
 				"nickname":  user.Nickname,
 				"gender":    strconv.Itoa(user.Gender),
@@ -288,7 +260,7 @@ func setRedisUserInfo(unionid string) (User, error) {
 		"language":  1,
 	}
 	user, err := findUser(query, selector)
-	if err != nil {
+	if err != nil || user.Nickname == "" || user.AvatarURL == "" {
 		return user, err
 	}
 

@@ -424,26 +424,45 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	defer cntrl.Close()
 	groupTable := cntrl.GetTable(constant.TableGroup)
 
+	group := Group{}
 	query := bson.M{
-		"_id":     bson.ObjectIdHex(groupID),
-		"ownerID": ownerID,
+		"_id": bson.ObjectIdHex(groupID),
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"managerIDs": bson.M{
+	}
+	selector := bson.M{
+		"owner_id": 1,
+		"managers": 1,
+	}
+	err := groupTable.Find(query).Select(selector).One(&group)
+	if err != nil {
+		return err
+	}
+
+	if !(ownerID == group.OwnerID || (len(toUserIDs) == 1 && toUserIDs[0] == ownerID)) {
+		return constant.ErrorParamWrong
+	}
+
+	query = bson.M{
+		"_id": bson.ObjectIdHex(groupID),
+		"status": bson.M{
+			"$gte": constant.GroupCommonStatus,
+		},
+		"managers": bson.M{
 			"$all": toUserIDs,
 		},
 	}
 	update := bson.M{
 		"$pullAll": bson.M{
-			"managerIDs": toUserIDs,
+			"managers": toUserIDs,
 		},
 		"$inc": bson.M{
-			"personNum": -len(toUserIDs),
+			"person_num": -len(toUserIDs),
 		},
 	}
 
-	err := groupTable.Update(query, update)
+	err = groupTable.Update(query, update)
 	if err != nil {
 		return err
 	}
@@ -455,7 +474,7 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"manageGroups": groupID,
+			"manage_groups": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)

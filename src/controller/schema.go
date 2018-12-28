@@ -13,6 +13,8 @@ import (
 var (
 	handler *gh.Handler
 
+	isProd bool
+
 	query = graphql.NewObject(graphql.ObjectConfig{
 		Name: "query",
 		Fields: graphql.Fields{
@@ -127,15 +129,13 @@ func init() {
 	}
 	schema, _ := graphql.NewSchema(schemaConfig)
 
-	graphiql := true
-	if config.Conf.AppInfo.Env == "prod" {
-		graphiql = false
-	}
+	isProd = config.Conf.AppInfo.Env == "prod"
 
 	handler = gh.New(&gh.Config{
-		Schema:   &schema,
-		GraphiQL: graphiql,
-		Pretty:   graphiql,
+		Schema: &schema,
+		// GraphiQL: isProd,
+		Pretty:     isProd,
+		Playground: isProd,
 	})
 }
 
@@ -144,7 +144,7 @@ func Graphql(w http.ResponseWriter, r *http.Request) {
 	// jwt
 	token := r.Header.Get("Authorization")
 	user, ok := validateJWT(token)
-	if !ok {
+	if !ok && isProd {
 		resJSONError(w, http.StatusUnauthorized, constant.ErrorMsgUnAuth)
 		return
 	}
