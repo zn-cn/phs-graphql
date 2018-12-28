@@ -95,8 +95,16 @@ func (this *RedisDBCntlr) DEL(keys ...interface{}) (interface{}, error) {
 	return this.conn.Do("DEL", keys...)
 }
 
-func (this *RedisDBCntlr) HGETALL(key string) (map[string]string, error) {
-	return redis.StringMap(this.conn.Do("HGETALL", key))
+func (this *RedisDBCntlr) HGETALL(key string) (map[string]interface{}, error) {
+	d, err := redis.StringMap(this.conn.Do("HGETALL", key))
+	if err != nil {
+		return nil, err
+	}
+	data := map[string]interface{}{}
+	for k, v := range d {
+		data[k] = v
+	}
+	return data, err
 }
 
 func (this *RedisDBCntlr) HMGET(key string, fields ...interface{}) (map[string]string, error) {

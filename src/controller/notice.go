@@ -18,13 +18,13 @@ var idArgs = graphql.FieldConfigArgument{
 
 var getNoticesEnumType = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "getNoticesEnum",
-	Description: "更新类型",
+	Description: "获取类型",
 	Values: graphql.EnumValueConfigMap{
-		"Update": &graphql.EnumValueConfig{
+		"GetAll": &graphql.EnumValueConfig{
 			Value:       constant.ReqNoticeGetAllType,
 			Description: "获取全部",
 		},
-		"UpdateContent": &graphql.EnumValueConfig{
+		"GetByGroupCode": &graphql.EnumValueConfig{
 			Value:       constant.ReqNoticeGetByGroupCodeType,
 			Description: "按照圈子获取提醒",
 		},
@@ -37,7 +37,7 @@ var noticePageArgs = graphql.FieldConfigArgument{
 		Type:        graphql.NewNonNull(getNoticesEnumType),
 	},
 	"code": &graphql.ArgumentConfig{
-		Type:        graphql.ID,
+		Type:        graphql.String,
 		Description: "圈子code",
 	},
 	"page": &graphql.ArgumentConfig{
@@ -77,7 +77,7 @@ var noticeType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.ID,
 			Description: "id",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if notice, ok := p.Source.(model.Notice); ok == true {
+				if notice, ok := p.Source.(model.Notice); ok {
 					return notice.ID.Hex(), nil
 				}
 				return nil, constant.ErrorEmpty
@@ -139,9 +139,12 @@ func init() {
 		Type:        groupType,
 		Description: "群组信息",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if notice, ok := p.Source.(model.Notice); ok == true {
+			if notice, ok := p.Source.(model.Notice); ok {
 				groupInfos, err := model.GetRedisGroupInfos([]string{notice.GroupID})
-				return groupInfos[0], err
+				if len(groupInfos) == 1 {
+					return groupInfos[0], nil
+				}
+				return nil, err
 			}
 			return nil, constant.ErrorEmpty
 		},
@@ -164,7 +167,7 @@ func getNotices(p graphql.ResolveParams) (interface{}, error) {
 		return nil, err
 	}
 
-	if data.PerPage >= 20 || data.PerPage <= 0 || data.Page <= 0 {
+	if data.PerPage > 20 || data.Page <= 0 {
 		writeNoticeLog("getNotices", constant.ErrorMsgParamWrong, err)
 		return nil, constant.ErrorParamWrong
 	}
@@ -233,7 +236,7 @@ var noticeArgsType = graphql.NewInputObject(graphql.InputObjectConfig{
 		},
 		"type": &graphql.InputObjectFieldConfig{
 			Description: "更新类型",
-			Type:        graphql.NewNonNull(updateNoticeEnumType),
+			Type:        updateNoticeEnumType,
 		},
 		"groupID": &graphql.InputObjectFieldConfig{
 			Description: "群组id",

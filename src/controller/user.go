@@ -41,7 +41,7 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.ID,
 			Description: "id",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if user, ok := p.Source.(model.User); ok == true {
+				if user, ok := p.Source.(model.User); ok {
 					return user.ID.Hex(), nil
 				}
 				return nil, constant.ErrorEmpty
@@ -100,7 +100,7 @@ func init() {
 		Type:        graphql.NewList(groupType),
 		Description: "创建/拥有的群组",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if user, ok := p.Source.(model.User); ok == true {
+			if user, ok := p.Source.(model.User); ok {
 				return model.GetRedisGroupInfos(user.OwnGroupIDs)
 			}
 			return nil, constant.ErrorEmpty
@@ -110,7 +110,7 @@ func init() {
 		Type:        graphql.NewList(groupType),
 		Description: "管理的群组",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if user, ok := p.Source.(model.User); ok == true {
+			if user, ok := p.Source.(model.User); ok {
 				return model.GetRedisGroupInfos(user.ManageGroupIDs)
 			}
 			return nil, constant.ErrorEmpty
@@ -120,7 +120,7 @@ func init() {
 		Type:        graphql.NewList(groupType),
 		Description: "加入的群组",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if user, ok := p.Source.(model.User); ok == true {
+			if user, ok := p.Source.(model.User); ok {
 				return model.GetRedisGroupInfos(user.JoinGroupIDs)
 			}
 			return nil, constant.ErrorEmpty

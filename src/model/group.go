@@ -66,9 +66,8 @@ func CreateGroup(unionid, nickname, avatarURL string) (string, error) {
 	}
 	err := insertGroups(group)
 	if err != nil {
-		return code, err
+		return "", err
 	}
-
 	go AddUserOwnGroup(unionid, group.ID.Hex())
 	return code, err
 }
@@ -432,8 +431,8 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 		},
 	}
 	selector := bson.M{
-		"owner_id": 1,
-		"managers": 1,
+		"ownerID":    1,
+		"managerIDs": 1,
 	}
 	err := groupTable.Find(query).Select(selector).One(&group)
 	if err != nil {
@@ -449,16 +448,16 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"managers": bson.M{
+		"managerIDs": bson.M{
 			"$all": toUserIDs,
 		},
 	}
 	update := bson.M{
 		"$pullAll": bson.M{
-			"managers": toUserIDs,
+			"managerIDs": toUserIDs,
 		},
 		"$inc": bson.M{
-			"person_num": -len(toUserIDs),
+			"personNum": -len(toUserIDs),
 		},
 	}
 
@@ -474,7 +473,7 @@ func DelGroupManager(groupID, ownerID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"manage_groups": groupID,
+			"manageGroupIDs": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)
@@ -497,18 +496,36 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 		"status": bson.M{
 			"$gte": constant.GroupCommonStatus,
 		},
-		"$or": []bson.M{
-			bson.M{
-				"ownerID": userID,
-			},
-			bson.M{
-				"managerIDs": userID,
-			},
-		},
 		"memberIDs": bson.M{
 			"$all": toUserIDs,
 		},
 	}
+	selector := bson.M{
+		"ownerID":    1,
+		"managerIDs": 1,
+	}
+	group := Group{}
+	err := groupTable.Find(query).Select(selector).One(&group)
+	if err != nil {
+		return err
+	}
+
+	ok := false
+
+	if userID == group.OwnerID || (len(toUserIDs) == 1 && toUserIDs[0] == userID) {
+		ok = true
+	}
+
+	for _, id := range group.ManagerIDs {
+		if id == userID {
+			ok = true
+		}
+	}
+
+	if !ok {
+		return constant.ErrorParamWrong
+	}
+
 	update := bson.M{
 		"$pullAll": bson.M{
 			"memberIDs": toUserIDs,
@@ -518,7 +535,7 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 		},
 	}
 
-	err := groupTable.Update(query, update)
+	err = groupTable.Update(query, update)
 	if err != nil {
 		return err
 	}
@@ -530,7 +547,7 @@ func DelGroupMember(groupID, userID string, toUserIDs []string) error {
 	}
 	update = bson.M{
 		"$pull": bson.M{
-			"joinGroups": groupID,
+			"joinGroupIDs": groupID,
 		},
 	}
 	userTable := cntrl.GetTable(constant.TableUser)
@@ -583,11 +600,11 @@ func getGroupCode() (string, error) {
 	return cntrl.LPOP(constant.RedisGroupCodePool)
 }
 
-func GetRedisGroupInfos(ids []string) ([]map[string]string, error) {
+func GetRedisGroupInfos(ids []string) ([]map[string]interface{}, error) {
 	cntrl := db.NewRedisDBCntlr()
 	defer cntrl.Close()
 
-	res := make([]map[string]string, len(ids))
+	res := make([]map[string]interface{}, len(ids))
 	for i, id := range ids {
 		key := fmt.Sprint(constant.RedisGroupInfo, id)
 		data, err := cntrl.HGETALL(key)

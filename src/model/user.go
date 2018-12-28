@@ -211,7 +211,7 @@ func insertUsers(docs ...interface{}) error {
 
 /****************************************** user redis action ****************************************/
 
-func GetRedisUserInfo(unionid string) (map[string]string, error) {
+func GetRedisUserInfo(unionid string) (map[string]interface{}, error) {
 	ids := []string{unionid}
 	userInfos, err := GetRedisUserInfos(ids)
 	if len(userInfos) > 0 {
@@ -220,17 +220,17 @@ func GetRedisUserInfo(unionid string) (map[string]string, error) {
 	return nil, err
 }
 
-func GetRedisUserInfos(unionids []string) ([]map[string]string, error) {
+func GetRedisUserInfos(unionids []string) ([]map[string]interface{}, error) {
 	redisConn := db.NewRedisDBCntlr()
 	defer redisConn.Close()
 
-	resData := make([]map[string]string, len(unionids))
+	resData := make([]map[string]interface{}, len(unionids))
 	for i, unionid := range unionids {
 		key := fmt.Sprintf(constant.RedisUserInfo, unionid)
 		userInfo, err := redisConn.HGETALL(key)
 		if len(userInfo) == 0 || err != nil {
 			user, _ := setRedisUserInfo(unionid)
-			userInfo = map[string]string{
+			userInfo = map[string]interface{}{
 				"nickname":  user.Nickname,
 				"gender":    strconv.Itoa(user.Gender),
 				"province":  user.Province,

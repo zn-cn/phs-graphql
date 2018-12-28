@@ -3,12 +3,12 @@ schema {
   mutation: mutation
 }
 
-# 更新类型
+# 获取类型
 enum getNoticesEnum {
   # 获取全部
-  Update @deprecated
+  GetAll @deprecated
   # 按照圈子获取提醒
-  UpdateContent @deprecated
+  GetByGroupCode @deprecated
 }
 
 # group
@@ -29,14 +29,14 @@ type group {
   nickname: String @deprecated
   # 创建者信息
   owner: user @deprecated
-  # unionid 注：以下三种身份不会重复，如：members中不会有owner
-  ownerID: String @deprecated
   # 总人数：1 + 管理员人数 + 成员人数
   personNum: Int @deprecated
   # 状态
   status: groupStatusEnum @deprecated
   # 二维码
   ticket: ticket @deprecated
+  # 用户的状态
+  userStatus: groupUserStatusEnum @deprecated
 }
 
 # 圈子状态
@@ -45,6 +45,16 @@ enum groupStatusEnum {
   common @deprecated
   # 解散状态
   delete @deprecated
+}
+
+# 圈子状态
+enum groupUserStatusEnum {
+  # 创建者状态
+  owner @deprecated
+  # 管理员状态
+  manager @deprecated
+  # 成员状态
+  member @deprecated
 }
 
 # img
@@ -104,19 +114,15 @@ type mutation {
   ): Boolean @deprecated
   # 更新群组成员, 按照权限限制: 创建者 > 管理员 > 成员, 如：管理员可以删除成员
   updateGroupMembers(
+    # 群组id
+    groupID: String
     #  用户unionid数组, type=1时 数组长度为1, type=2时 数组长度为0
     userIDs: [String]
     # 更新类型
     type: updateGroupMembersEnum!
-    # 群组id
-    groupID: String
   ): Boolean @deprecated
   # 更新提醒
   updateNotice(
-    # 提醒时间毫秒时间戳
-    noticeTime: Int
-    # id
-    id: ID
     # 更新类型
     type: updateNoticeEnum!
     # 群组id
@@ -129,6 +135,10 @@ type mutation {
     imgs: [imgArgs]
     # 注释
     note: String
+    # 提醒时间毫秒时间戳
+    noticeTime: Int
+    # id
+    id: ID
   ): Boolean @deprecated
 }
 
@@ -150,8 +160,6 @@ type notice {
   imgs: [img] @deprecated
   # 点赞人数
   likeNum: Int @deprecated
-  # 点赞用户
-  likeUsers: [String] @deprecated
   # 备注
   note: String @deprecated
   # 提醒时间毫秒时间戳
@@ -164,12 +172,12 @@ type notice {
   type: Int @deprecated
   # 查看人数
   watchNum: Int @deprecated
-  # 查看用户
-  watchUsers: [String] @deprecated
 }
 
 # noticeArgs
 input noticeArgs {
+  # 作业标题
+  title: String
   # 作业文字内容
   content: String
   # 图片
@@ -181,21 +189,19 @@ input noticeArgs {
   # id
   id: ID
   # 更新类型
-  type: updateNoticeEnum!
+  type: updateNoticeEnum
   # 群组id
   groupID: String
-  # 作业标题
-  title: String
 }
 
 # 通知状态
 enum noticeStatusEnum {
-  # 删除状态
-  delete @deprecated
   # 过期状态
   expire @deprecated
   # 发布状态
   publish @deprecated
+  # 删除状态
+  delete @deprecated
 }
 
 # qiniuToken
@@ -234,7 +240,7 @@ type query {
   # 获取通知列表
   notices(
     # 圈子code
-    code: ID
+    code: String
     # 页数, 从1开始
     page: Int!
     # 一页数量，限制范围: 1~20
@@ -287,6 +293,10 @@ type ticket {
 
 # 更新类型
 enum updateGroupMembersEnum {
+  # 更新拥有者(转让群组，且只能转给管理员)
+  UpdateOwner @deprecated
+  # 删除拥有者，即解散群组
+  DelOwner @deprecated
   # 设置管理者
   SetManager @deprecated
   # 取消管理员权限
@@ -295,20 +305,10 @@ enum updateGroupMembersEnum {
   DelManager @deprecated
   # 删除成员
   DelMember @deprecated
-  # 更新拥有者(转让群组，且只能转给管理员)
-  UpdateOwner @deprecated
-  # 删除拥有者，即解散群组
-  DelOwner @deprecated
 }
 
 # 更新类型
 enum updateNoticeEnum {
-  # 更新noticeTime
-  UpdateNoticeTime @deprecated
-  # 更新groupID
-  UpdateGroupID @deprecated
-  # 大更新(空值自动过滤，更新不包含groupID)
-  Update @deprecated
   # 更新content
   UpdateContent @deprecated
   # 更新imgs
@@ -317,6 +317,12 @@ enum updateNoticeEnum {
   UpdateTitle @deprecated
   # 更新note
   UpdateNote @deprecated
+  # 更新noticeTime
+  UpdateNoticeTime @deprecated
+  # 更新groupID
+  UpdateGroupID @deprecated
+  # 大更新(空值自动过滤，更新不包含groupID)
+  Update @deprecated
 }
 
 # user

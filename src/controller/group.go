@@ -33,7 +33,7 @@ var groupStatusEnumType = graphql.NewEnum(graphql.EnumConfig{
 })
 
 var groupUserStatusEnumType = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "groupStatusEnum",
+	Name:        "groupUserStatusEnum",
 	Description: "圈子状态",
 	Values: graphql.EnumValueConfigMap{
 		"owner": &graphql.EnumValueConfig{
@@ -74,7 +74,7 @@ var groupType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.ID,
 			Description: "id",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if group, ok := p.Source.(model.Group); ok == true {
+				if group, ok := p.Source.(model.Group); ok {
 					return group.ID.Hex(), nil
 				}
 				return nil, constant.ErrorEmpty
@@ -122,7 +122,7 @@ func init() {
 		Type:        userType,
 		Description: "创建者信息",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if group, ok := p.Source.(model.Group); ok == true {
+			if group, ok := p.Source.(model.Group); ok {
 				return model.GetRedisUserInfo(group.OwnerID)
 			}
 			writeGroupLog("managers", "获取群组创建者信息失败", nil)
@@ -133,7 +133,7 @@ func init() {
 		Type:        graphql.NewList(userType),
 		Description: "管理员",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if group, ok := p.Source.(model.Group); ok == true {
+			if group, ok := p.Source.(model.Group); ok {
 				return model.GetRedisUserInfos(group.ManagerIDs)
 			}
 			writeGroupLog("managers", "获取群组管理员信息失败", nil)
@@ -144,7 +144,7 @@ func init() {
 		Type:        graphql.NewList(userType),
 		Description: "成员",
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if group, ok := p.Source.(model.Group); ok == true {
+			if group, ok := p.Source.(model.Group); ok {
 				return model.GetRedisUserInfos(group.MemberIDs)
 			}
 			writeGroupLog("managers", "获取群组成员信息失败", nil)
@@ -171,20 +171,20 @@ func getGroupQrcode(p graphql.ResolveParams) (interface{}, error) {
 }
 
 func getGroupUserStatus(p graphql.ResolveParams) (interface{}, error) {
-	if group, ok := p.Source.(model.Group); ok == true {
+	if group, ok := p.Source.(model.Group); ok {
 		status := 0
 		userID := getJWTUserID(p)
 		if userID == group.OwnerID {
-			status = 1
+			status = constant.GroupUserStatusOwner
 		} else {
 			for _, id := range group.ManagerIDs {
 				if id == userID {
-					status = 2
+					status = constant.GroupUserStatusManager
 					break
 				}
 			}
 			if status == 0 {
-				status = 3
+				status = constant.GroupUserStatusMember
 			}
 		}
 		return status, nil
@@ -213,19 +213,19 @@ var createGroupArgs = graphql.FieldConfigArgument{
 
 func createGroup(p graphql.ResolveParams) (interface{}, error) {
 	nickname := p.Args["nickname"].(string)
-	avatarURL := p.Args["avatarURL"].(string)
+	avatarURL := p.Args["avatarUrl"].(string)
 	userID := getJWTUserID(p)
-	if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
-		model.SetUserFollowStatus(userID, isFollow)
-		return nil, constant.ErrorUnFollow
-	}
+	// if isFollow, _ := model.IsFollowOfficeAccount(userID); !isFollow {
+	// 	model.SetUserFollowStatus(userID, isFollow)
+	// 	return nil, constant.ErrorUnFollow
+	// }
 	code, err := model.CreateGroup(userID, nickname, avatarURL)
 	if err != nil {
 		writeGroupLog("CreateGroup", "创建群组失败", err)
 		return nil, err
 	}
 
-	resData := map[string]string{
+	resData := map[string]interface{}{
 		"code": code,
 	}
 	return resData, nil
