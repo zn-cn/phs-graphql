@@ -124,17 +124,16 @@ func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 
 	now := util.GetNowTimestamp()
 
-	newNotices := make([]Notice, len(notices))
-	left, right := 0, len(notices)-1
-	for _, notice := range notices {
+
+	right := len(notices) - 1
+	for i, notice := range notices {
 		if notice.NoticeTime < now {
 			// 已经过期
-			newNotices[right] = notice
-			right--
-		} else {
-			// 没有过期
-			newNotices[left] = notice
-			left++
+			for j := i; j < len(notices) && j < right; j++ {
+				notices[j], notices[right] = notices[right], notices[j]
+				right--
+			}
+			break
 		}
 	}
 	return newNotices, err
