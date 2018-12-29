@@ -4,6 +4,7 @@ import (
 	"constant"
 	"fmt"
 	"model/db"
+	"sort"
 	"time"
 	"util"
 
@@ -100,9 +101,15 @@ func GetNotice(id string) (Notice, error) {
 	return findNotice(query, DefaultSelector)
 }
 
+type NoticeSlice []Notice
+
+func (s NoticeSlice) Len() int           { return len(s) }
+func (s NoticeSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s NoticeSlice) Less(i, j int) bool { return s[i].NoticeTime < s[j].NoticeTime }
+
 func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 	query := bson.M{
-		"groupID": bson.M{
+		"group_id": bson.M{
 			"$in": groups,
 		},
 		"status": bson.M{
@@ -110,33 +117,48 @@ func GetNotices(groups []string, page, perPage int) ([]Notice, error) {
 		},
 	}
 	selector := bson.M{
-		"watchUserIDs": 0,
-		"likeUserIDs":  0,
+		"watch_users": 0,
+		"like_users":  0,
 	}
 	fields := []string{
 		"-status",
-		"noticeTime",
+		"notice_time",
 	}
 	notices, err := findNotices(query, selector, page, perPage, fields...)
 	if err != nil {
 		return notices, err
 	}
 
+	mid := -1
+	isPub := false
+
 	now := util.GetNowTimestamp()
-
-
-	right := len(notices) - 1
 	for i, notice := range notices {
 		if notice.NoticeTime < now {
-			// 已经过期
-			for j := i; j < len(notices) && j < right; j++ {
-				notices[j], notices[right] = notices[right], notices[j]
-				right--
+			mid = i
+			if notice.Status == constant.NoticePubStatus {
+				isPub = true
 			}
 			break
 		}
 	}
-	return newNotices, err
+
+	if mid == -1 {
+		return notices, nil
+	}
+
+	sortNotices := notices[mid:]
+	if isPub {
+		sort.Sort(NoticeSlice(sortNotices))
+	}
+
+	for i, j := 0, len(sortNotices)-1; i < j; {
+		sortNotices[i], sortNotices[j] = sortNotices[j], sortNotices[i]
+		i++
+		j--
+	}
+
+	return append(notices[:mid], sortNotices...), err
 }
 
 func UpdateNotice(noticeID, userID string, updateData map[string]interface{}) error {
