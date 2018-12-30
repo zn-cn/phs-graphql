@@ -18,7 +18,6 @@ const (
 
 	/****************************************** timer ****************************************/
 
-	TimerBackUpdate     = "0 0 4 * * *"  // 后台更新
 	TimerSendDayNotice  = "0 0 9 * * *"  // 每天九点提醒
 	TimerSendWeekNotice = "0 0 18 * * 5" // 每周周五18点提醒
 	TimerEveryHour      = "@hourly"      // 每小时触发

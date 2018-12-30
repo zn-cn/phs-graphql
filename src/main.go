@@ -29,10 +29,7 @@ func startWeb() {
 func startTimer() {
 	c := cron.New()
 
-	if config.Conf.AppInfo.Env == "prod" {
-		c.AddFunc(constant.TimerEveryHour, controller.StartHourTimer)
-	}
-	c.AddFunc(constant.TimerBackUpdate, controller.StartBackUpdate)
+	c.AddFunc(constant.TimerEveryHour, controller.StartHourTimer)
 	c.AddFunc(constant.TimerSendDayNotice, controller.StartDayTimer)
 	c.AddFunc(constant.TimerSendWeekNotice, controller.StartWeekTimer)
 

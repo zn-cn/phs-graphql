@@ -2,17 +2,9 @@
 
 注：REST版本见
 
-## 基本信息：
+技术栈：golang, graphql, jwt, mongo, redis
 
-+ 入口
-  + 生产：在微信小程序中搜索**写了吗**
-+ 域名
-  + 生产：`<hostname>`
-  + 测试：`<dev hostname>`
-  + 图片：`<image host>`
-+ 镜像
-  + 生产：`<space>/phs-mp-prod:1.0.0`
-  + 测试：`<space>/phs-mp-dev:1.0.0`
+命名：所有字段全部采用驼峰命名（含数据库和返回字段）
 
 ## 项目介绍
 

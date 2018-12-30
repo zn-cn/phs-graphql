@@ -4,7 +4,10 @@ package controller
 import "model"
 
 func StartHourTimer() {
-	model.UpdateRedisAccessToken()
+	if isProd {
+		model.UpdateRedisAccessToken()
+	}
+	model.UpdateExpireNotice()
 }
 
 func StartDayTimer() {
@@ -13,8 +16,4 @@ func StartDayTimer() {
 
 func StartWeekTimer() {
 	model.SendWeekNotice()
-}
-
-func StartBackUpdate() {
-	model.UpdateExpireNotice()
 }
