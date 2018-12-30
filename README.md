@@ -24,6 +24,8 @@
 - 再使用 `wx.getUserInfo` 获取微信信息
 - 调用后台 API：POST `/api/v1/login`
 
+---
+
 ## 一、graphql 初体验
 
 **官方定义：**
@@ -41,13 +43,13 @@ graphql 如下：
 如果请求如下（真实开发可能有点差别）：
 
 ```
-query{ 
-	comment(id: "1") { 
-	      title 
-	      user { 
+query{
+	comment(id: "1") {
+	      title
+	      user {
 	           nickname
                email
-	      } 
+	      }
 	}
 }
 ```
@@ -147,13 +149,13 @@ RESTful 大概是这样：
   如果：请求如下，那么只会返回评论的title，以及发评论用户的nickname和email，而不会返回用户的id等其他信息
 
   ```
-  query{ 
-  	comment(id: "1") { 
-  	      title 
-  	      user { 
+  query{
+  	comment(id: "1") {
+  	      title
+  	      user {
   	           nickname
                  email
-  	      } 
+  	      }
   	}
   }
   ```
@@ -216,4 +218,4 @@ Graphql -> Resolvers：
 学习链接：
 
 - [官方英文文档](https://graphql.org/)
-- [官方中文文档](http://graphql.cn/learn/queries/) 
+- [官方中文文档](http://graphql.cn/learn/queries/)
