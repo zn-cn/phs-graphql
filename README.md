@@ -207,7 +207,7 @@ Graphql -> Resolvers：
 
 ## 附录
 
-个人实践：https://github.com/mu-mo/phs-graphql
+个人实践：https://github.com/yun-mu/phs-graphql
 
 参考链接：
 
